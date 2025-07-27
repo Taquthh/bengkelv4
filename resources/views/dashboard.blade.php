@@ -109,13 +109,15 @@
                             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Transaksi Baru</h3>
                             <div class="p-2 bg-green-100 dark:bg-green-900 rounded-full">
                                 <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                                 </svg>
                             </div>
                         </div>
-                        <p class="text-gray-600 dark:text-gray-400 mb-4">Buat transaksi service atau penjualan suku cadang</p>
+                        <p class="text-gray-600 dark:text-gray-400 mb-4">
+                            Buat transaksi servis atau penjualan suku cadang
+                        </p>
                         <button onclick="document.getElementById('transaksiModal').classList.remove('hidden')" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                        Kelola Inventory
+                            Kelola Transaksi
                         </button>
                     </div>
 
@@ -224,8 +226,8 @@
                         </h2>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <!-- Tambah Barang -->
-                            <a href="/" class="flex items-center gap-4 bg-green-100 dark:bg-green-950 border border-green-300 dark:border-green-700 p-4 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition">
+                            <!-- Transaksi Servis Mobil -->
+                            <a href="" class="flex items-center gap-4 bg-green-100 dark:bg-green-950 border border-green-300 dark:border-green-700 p-4 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition">
                                 <div class="p-3 bg-green-500 text-white rounded-lg">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -233,12 +235,12 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Transaksi Service Mobil</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Masukkan detail transaksi service mobil</p>
+                                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Transaksi Servis Mobil</h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Masukkan detail transaksi servis mobil pelanggan</p>
                                 </div>
                             </a>
 
-                            <!-- Tambah Stok -->
+                            <!-- Transaksi Penjualan Barang -->
                             <a href="{{ route('transaksi.barang') }}" class="flex items-center gap-4 bg-green-100 dark:bg-green-950 border border-green-300 dark:border-green-700 p-4 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition">
                                 <div class="p-3 bg-green-500 text-white rounded-lg">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -247,13 +249,14 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Riwayat Transaksi Penjualan Barang</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Data riwayat penjualan barang berdasarkan transaksi sebelumnya</p>
+                                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Transaksi Penjualan Barang</h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Masukkan detail transaksi penjualan barang ke pelanggan</p>
                                 </div>
                             </a>
                         </div>
                     </div>
                 </div>
+
 
 
                 <!-- Modal Riwayat Transaksi -->
@@ -277,7 +280,7 @@
                         </h2>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <!-- Tambah Barang -->
+                            <!-- Tombol untuk melihat riwayat servis mobil -->
                             <a href="/" class="flex items-center gap-4 bg-blue-100 dark:bg-blue-950 border border-blue-300 dark:border-blue-700 p-4 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition">
                                 <div class="p-3 bg-blue-500 text-white rounded-lg">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -286,12 +289,12 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Transaksi Service Mobil</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Masukkan detail transaksi service mobil</p>
+                                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Riwayat Servis Mobil</h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Lihat daftar riwayat transaksi servis mobil pelanggan</p>
                                 </div>
                             </a>
 
-                            <!-- Tambah Stok -->
+                            <!-- Tombol untuk melihat riwayat penjualan barang -->
                             <a href="{{ route('riwayat.transaksi.barang') }}" class="flex items-center gap-4 bg-blue-100 dark:bg-blue-950 border border-blue-300 dark:border-blue-700 p-4 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition">
                                 <div class="p-3 bg-blue-500 text-white rounded-lg">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -300,11 +303,12 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Transaksi Penjualan Barang</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Masukkan detail transaksi penjualan barang</p>
+                                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Riwayat Transaksi Barang</h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Lihat daftar riwayat transaksi penjualan barang</p>
                                 </div>
                             </a>
                         </div>
+
                     </div>
                 </div>
 
