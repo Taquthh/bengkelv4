@@ -1424,7 +1424,7 @@ document.addEventListener('input', function(e) {
     }
 });
 
-console.log('Enhanced payment system with fixed logic loaded');
+// console.log('Enhanced payment system with fixed logic loaded');
 console.log('Payment strategies: bayar_akhir, bayar_dimuka, cicilan');
 console.log('Keyboard shortcuts: Ctrl+S (save), Enter (add item), Escape (cancel/clear)');
 </script>

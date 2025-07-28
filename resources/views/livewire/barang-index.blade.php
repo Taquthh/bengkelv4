@@ -438,27 +438,6 @@
                             <span class="text-red-500 text-sm mt-1">{{ $satuan }}</span> 
                             @enderror
                         </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                Harga Satuan
-                            </label>
-                            <div class="relative">
-                                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">Rp</span>
-                                <input 
-                                    wire:model="harga" 
-                                    type="number" 
-                                    class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('harga') border-red-500 @enderror"
-                                    placeholder="0"
-                                    min="0"
-                                    step="0.01"
-                                >
-                            </div>
-                            @error('harga') 
-                            @php($harga = $message)
-                            <span class="text-red-500 text-sm mt-1">{{ $harga }}</span> 
-                            @enderror
-                        </div>
                     </div>
 
                     <div>
