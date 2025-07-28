@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\BarangPembelian;
+use App\Livewire\TransaksiServices;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Livewire\BarangIndex;
@@ -28,12 +29,18 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['auth', 'role:kasir,owner'])->group(function () {
         Route::get('/barang/stok', PembelianIndex::class); // Ini hanya untuk Livewire v3
         Route::get('/barang', BarangIndex::class); // Ini hanya untuk Livewire v3
-        Route::get('/transaksi-barang', TransaksiBarang::class)->name('transaksi.barang'); 
+        Route::get('/transaksi-barang', TransaksiBarang::class)->name('transaksi.barang');
+        Route::get('/transaksi-service', TransaksiServices::class)->name('transaksi.services');  
         Route::get('/riwayat-transaksi-barang', RiwayatTransaksiBarang::class)->name('riwayat.transaksi.barang');
 
         // // Opsional: daftar riwayat penjualan
         // Route::get('/penjualan', PenjualanIndex::class)->name('penjualan.index');
     });
+
+    Route::get('/service/invoice/{id}', [App\Http\Controllers\ServiceInvoiceController::class, 'show'])
+        ->name('service.invoice');
+    Route::get('/service/invoice/{id}/print', [App\Http\Controllers\ServiceInvoiceController::class, 'print'])
+        ->name('service.invoice.print');
 
 
     Route::middleware(['auth', 'role:kasir'])->group(function () {

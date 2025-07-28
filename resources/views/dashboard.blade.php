@@ -227,7 +227,7 @@
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <!-- Transaksi Servis Mobil -->
-                            <a href="" class="flex items-center gap-4 bg-green-100 dark:bg-green-950 border border-green-300 dark:border-green-700 p-4 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition">
+                            <a href="{{ route('transaksi.services') }}" class="flex items-center gap-4 bg-green-100 dark:bg-green-950 border border-green-300 dark:border-green-700 p-4 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition">
                                 <div class="p-3 bg-green-500 text-white rounded-lg">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
