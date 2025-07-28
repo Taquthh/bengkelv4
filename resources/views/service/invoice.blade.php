@@ -45,9 +45,9 @@
                 <div class="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-6 sm:p-8">
                     <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
                         <div class="flex-1">
-                            <h2 class="text-xl sm:text-3xl font-bold mb-2">BENGKEL MOTOR MOBIL</h2>
-                            <p class="text-blue-100 text-sm sm:text-lg">Jl. Contoh No. 123, Kota Contoh</p>
-                            <p class="text-blue-100 text-sm">Telp: (021) 12345678 | Email: info@bengkel.com</p>
+                            <h2 class="text-xl sm:text-3xl font-bold mb-2">FJS Auto Service</h2>
+                            <p class="text-blue-100 text-sm sm:text-lg">Jl. Veteran No.123, Banjarmasin</p>
+                            <p class="text-blue-100 text-sm">📞 0813 4841 0569 (Pa Taufik)</p>
                         </div>
                         <div class="text-left sm:text-right">
                             <div class="text-2xl sm:text-4xl font-bold">INVOICE</div>
