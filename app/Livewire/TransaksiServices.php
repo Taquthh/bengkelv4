@@ -764,36 +764,38 @@ class TransaksiServices extends Component
     private function generateInvoice()
     {
         $prefix = 'FJS';
-        $month = now()->format('M'); // e.g., APR
-        $year = now()->format('Y');  // e.g., 2025
+        $month = strtoupper(now()->format('M')); // e.g., APR
+        $year = now()->format('Y');              // e.g., 2025
 
         try {
-            // Ambil invoice terakhir di bulan dan tahun yang sama
+            // Ambil invoice terakhir di bulan dan tahun ini
             $lastInvoice = TransaksiService::where('invoice', 'like', '%/' . $prefix . '/' . $month . '/' . $year)
                 ->orderBy('invoice', 'desc')
                 ->first();
 
             if ($lastInvoice) {
-                // Ambil bagian nomor dari invoice
+                // Ambil 3 digit pertama sebagai nomor urut
                 $lastNumber = intval(substr($lastInvoice->invoice, 0, 3));
                 $newNumber = $lastNumber + 1;
-
-                // Reset ke 000 jika lebih dari 050
-                if ($newNumber > 50) {
-                    $newNumber = 0;
-                }
             } else {
-                $newNumber = 0;
+                $newNumber = 1; // Reset ke 001 jika bulan ini belum ada invoice
             }
 
+            // Format ke 3 digit
             $numberFormatted = str_pad($newNumber, 3, '0', STR_PAD_LEFT);
 
-            return $numberFormatted . '/' . $prefix . '/' . $month . '/' . $year;
+            // Gabungkan hasil akhir
+            return "{$numberFormatted}/{$prefix}/{$month}/{$year}";
+
         } catch (\Exception $e) {
-            Log::error('Error generating invoice: ' . $e->getMessage());
-            return str_pad(rand(0, 50), 3, '0', STR_PAD_LEFT) . '/' . $prefix . '/' . $month . '/' . $year;
+            Log::error('Gagal generate invoice: ' . $e->getMessage());
+
+            // Fallback: tetap buat invoice darurat
+            $fallbackNumber = str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
+            return "{$fallbackNumber}/{$prefix}/{$month}/{$year}";
         }
     }
+
 
 
     private function reduceStockFifo($barangId, $jumlahDibutuhkan)

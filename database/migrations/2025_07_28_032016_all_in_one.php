@@ -38,7 +38,7 @@ return new class extends Migration {
             $table->text('pekerjaan_dilakukan')->nullable();
             $table->enum('metode_pembayaran', ['tunai', 'transfer', 'piutang'])->default('tunai');
             $table->enum('strategi_pembayaran', ['bayar_akhir', 'bayar_dimuka', 'cicilan'])->default('bayar_akhir');
-            $table->enum('status_pembayaran', ['lunas', 'piutang', 'sebagian'])->default('lunas');
+            $table->enum('status_pembayaran', ['belum_bayar', 'sudah_bayar', 'lunas'])->default('belum_bayar');
             $table->enum('status_pekerjaan', ['belum_dikerjakan', 'sedang_dikerjakan', 'selesai'])->default('belum_dikerjakan');
             $table->decimal('total_barang', 15, 2)->default(0);
             $table->decimal('total_jasa', 15, 2)->default(0);
