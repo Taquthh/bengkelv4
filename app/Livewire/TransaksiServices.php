@@ -763,28 +763,38 @@ class TransaksiServices extends Component
 
     private function generateInvoice()
     {
-        $prefix = 'SRV';
-        $date = now()->format('Ymd');
-        
+        $prefix = 'FJS';
+        $month = now()->format('M'); // e.g., APR
+        $year = now()->format('Y');  // e.g., 2025
+
         try {
-            $lastInvoice = TransaksiService::where('invoice', 'like', $prefix . $date . '%')
+            // Ambil invoice terakhir di bulan dan tahun yang sama
+            $lastInvoice = TransaksiService::where('invoice', 'like', '%/' . $prefix . '/' . $month . '/' . $year)
                 ->orderBy('invoice', 'desc')
                 ->first();
-            
+
             if ($lastInvoice) {
-                $lastNumber = intval(substr($lastInvoice->invoice, -4));
+                // Ambil bagian nomor dari invoice
+                $lastNumber = intval(substr($lastInvoice->invoice, 0, 3));
                 $newNumber = $lastNumber + 1;
+
+                // Reset ke 000 jika lebih dari 050
+                if ($newNumber > 50) {
+                    $newNumber = 0;
+                }
             } else {
-                $newNumber = 1;
+                $newNumber = 0;
             }
-            
-            return $prefix . $date . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+
+            $numberFormatted = str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+
+            return $numberFormatted . '/' . $prefix . '/' . $month . '/' . $year;
         } catch (\Exception $e) {
             Log::error('Error generating invoice: ' . $e->getMessage());
-            // Fallback to timestamp-based invoice if there's an error
-            return $prefix . $date . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
+            return str_pad(rand(0, 50), 3, '0', STR_PAD_LEFT) . '/' . $prefix . '/' . $month . '/' . $year;
         }
     }
+
 
     private function reduceStockFifo($barangId, $jumlahDibutuhkan)
     {
