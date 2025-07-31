@@ -72,7 +72,7 @@
                                     <h3 class="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">Informasi Pelanggan</h3>
                                     
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Nama Pelanggan *</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Nama Pelanggan</label>
                                         <input wire:model="nama_pelanggan" type="text" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Masukkan nama pelanggan">
                                         @error('nama_pelanggan') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                     </div>
@@ -149,7 +149,7 @@
                         </div>
                     @endif
 
-                    <!-- Step 2: Pilih Barang -->
+<!-- Step 2: Pilih Barang -->
                     @if($currentStep == 2)
                         <div class="space-y-6">
                             <div class="flex items-center justify-between mb-6">
@@ -164,17 +164,121 @@
                                         <p class="text-gray-500">{{ count($barangs) }} item tersedia</p>
                                     </div>
                                 </div>
-                                <div class="relative w-80">
-                                    <input type="text" 
-                                           x-data="{ search: '' }" 
-                                           x-model="search" 
-                                           @input="filterItems($event.target.value)"
-                                           placeholder="Cari produk, merk, atau tipe..." 
-                                           class="w-full px-6 py-4 pl-14 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all duration-300 text-gray-900 placeholder-gray-400 shadow-sm text-base">
-                                    <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                <div class="flex items-center space-x-4">
+                                    <!-- Search Input -->
+                                    <div class="relative w-80">
+                                        <input type="text" 
+                                               x-data="{ search: '' }" 
+                                               x-model="search" 
+                                               @input="filterItems($event.target.value)"
+                                               placeholder="Cari produk, merk, atau tipe..." 
+                                               class="w-full px-6 py-4 pl-14 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all duration-300 text-gray-900 placeholder-gray-400 shadow-sm text-base">
+                                        <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Toggle Manual Input Button -->
+                                    <button type="button" 
+                                            onclick="toggleManualInput()"
+                                            class="px-6 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-2xl hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-lg flex items-center space-x-2">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                                         </svg>
+                                        <span>Input Manual</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Manual Input Form (Hidden by default) -->
+                            <div id="manualInputForm" class="hidden mb-6">
+                                <div class="bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl p-6 border-2 border-dashed border-orange-200">
+                                    <h3 class="text-lg font-bold text-orange-800 mb-4 flex items-center">
+                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                        Input Barang Manual
+                                    </h3>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                        <!-- Nama Barang -->
+                                        <div class="md:col-span-2">
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Nama Barang</label>
+                                            <input type="text" 
+                                                   wire:model="nama_barang_manual"
+                                                   placeholder="Nama barang yang akan diorder..."
+                                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200">
+                                            @error('nama_barang_manual') 
+                                                <span class="text-red-500 text-sm mt-1">{{ $message }}</span> 
+                                            @enderror
+                                        </div>
+                                        
+                                        <!-- Quantity -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Jumlah</label>
+                                            <input type="number" 
+                                                   wire:model="jumlah_manual"
+                                                   min="1" 
+                                                   step="1"
+                                                   placeholder="Qty"
+                                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200">
+                                            @error('jumlah_manual') 
+                                                <span class="text-red-500 text-sm mt-1">{{ $message }}</span> 
+                                            @enderror
+                                        </div>
+                                        
+                                        <!-- Satuan -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Satuan</label>
+                                            <select wire:model="satuan_manual" 
+                                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200">
+                                                <option value="pcs">pcs</option>
+                                                <option value="set">set</option>
+                                                <option value="unit">unit</option>
+                                                <option value="meter">meter</option>
+                                                <option value="liter">liter</option>
+                                                <option value="kg">kg</option>
+                                                <option value="dus">dus</option>
+                                                <option value="box">box</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                        <!-- Harga Jual -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Harga Jual</label>
+                                            <div class="relative">
+                                                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">Rp</span>
+                                                <input type="number" 
+                                                       wire:model="harga_jual_manual"
+                                                       min="0" 
+                                                       step="1000"
+                                                       placeholder="0"
+                                                       class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200">
+                                            </div>
+                                            @error('harga_jual_manual') 
+                                                <span class="text-red-500 text-sm mt-1">{{ $message }}</span> 
+                                            @enderror
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex justify-end space-x-3 mt-6">
+                                        <button type="button" 
+                                                onclick="toggleManualInput()"
+                                                class="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300 transition-all duration-200">
+                                            Batal
+                                        </button>
+                                        <button type="button" 
+                                                wire:click="tambahBarangManual"
+                                                class="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-xl hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-lg flex items-center space-x-2">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                            </svg>
+                                            <span>Tambah Item</span>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -251,6 +355,7 @@
                                 @endforeach
                             </div>
                         </div>
+
                     @endif
 
                     <!-- Step 3: Input Jasa -->
@@ -334,390 +439,255 @@
 
 
                     <!-- Step 4: Enhanced Payment System with Fixed Radio Buttons -->
-                    @if($currentStep == 4)
-                        <div class="space-y-6">
-                            <div class="flex items-center space-x-4 mb-6">
-                                <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                    </svg>
+@if($currentStep == 4)
+    <div class="space-y-6">
+        <div class="flex items-center space-x-4 mb-6">
+            <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900">Pembayaran</h2>
+                <p class="text-gray-500">Atur pembayaran untuk transaksi ini</p>
+            </div>
+        </div>
+
+        <!-- Transaction Summary -->
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Ringkasan Transaksi</h3>
+            <div class="grid grid-cols-3 gap-6">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-600">Rp{{ number_format($this->total_barang, 0, ',', '.') }}</div>
+                    <div class="text-sm text-gray-500">Total Barang</div>
+                    <div class="text-xs text-gray-400">{{ count($itemsBarang) }} item</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-purple-600">Rp{{ number_format($this->total_jasa, 0, ',', '.') }}</div>
+                    <div class="text-sm text-gray-500">Total Jasa</div>
+                    <div class="text-xs text-gray-400">{{ count($itemsJasa) }} jasa</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-green-600">Rp{{ number_format($this->total_keseluruhan, 0, ',', '.') }}</div>
+                    <div class="text-sm text-gray-500">Total Keseluruhan</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6">
+            <!-- Status Pekerjaan -->
+            <div class="bg-white rounded-2xl p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">🔧 Status Pekerjaan</h3>
+                <div class="space-y-3">
+                    <!-- Belum Dikerjakan -->
+                    <div class="cursor-pointer" wire:click="$set('status_pekerjaan', 'belum_dikerjakan')">
+                        <div class="p-4 border-2 rounded-xl transition-all duration-300 hover:border-orange-300
+                            {{ $status_pekerjaan == 'belum_dikerjakan' ? 'border-orange-500 bg-orange-50 shadow-md' : 'border-gray-200' }}">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center
+                                    {{ $status_pekerjaan == 'belum_dikerjakan' ? 'border-orange-500 bg-orange-500' : 'border-gray-300' }}">
+                                    @if($status_pekerjaan == 'belum_dikerjakan')
+                                        <div class="w-2 h-2 bg-white rounded-full"></div>
+                                    @endif
                                 </div>
                                 <div>
-                                    <h2 class="text-2xl font-bold text-gray-900">Status Pekerjaan & Pembayaran</h2>
-                                    <p class="text-gray-500">Atur status pekerjaan dan strategi pembayaran</p>
-                                </div>
-                            </div>
-
-                            <!-- Transaction Summary -->
-                            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
-                                <h3 class="text-lg font-semibold text-gray-800 mb-4">Ringkasan Transaksi</h3>
-                                <div class="grid grid-cols-3 gap-6">
-                                    <div class="text-center">
-                                        <div class="text-2xl font-bold text-blue-600">Rp{{ number_format($this->total_barang, 0, ',', '.') }}</div>
-                                        <div class="text-sm text-gray-500">Total Barang</div>
-                                        <div class="text-xs text-gray-400">{{ count($itemsBarang) }} item</div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-2xl font-bold text-purple-600">Rp{{ number_format($this->total_jasa, 0, ',', '.') }}</div>
-                                        <div class="text-sm text-gray-500">Total Jasa</div>
-                                        <div class="text-xs text-gray-400">{{ count($itemsJasa) }} jasa</div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-3xl font-bold text-green-600">Rp{{ number_format($this->total_keseluruhan, 0, ',', '.') }}</div>
-                                        <div class="text-sm text-gray-500">Total Keseluruhan</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-6">
-                                <!-- Work Status & Payment Strategy -->
-                                <div class="space-y-6">
-                                    <!-- Work Status with Fixed Radio Buttons -->
-                                    <div class="bg-white rounded-2xl p-6 border border-gray-200">
-                                        <h3 class="text-lg font-semibold text-gray-800 mb-4">🔧 Status Pekerjaan</h3>
-                                        <div class="space-y-3">
-                                            <!-- Belum Dikerjakan -->
-                                            <div class="cursor-pointer" wire:click="$set('status_pekerjaan', 'belum_dikerjakan')">
-                                                <div class="p-4 border-2 rounded-xl transition-all duration-300 hover:border-orange-300
-                                                    {{ $status_pekerjaan == 'belum_dikerjakan' ? 'border-orange-500 bg-orange-50 shadow-md' : 'border-gray-200' }}">
-                                                    <div class="flex items-center space-x-3">
-                                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center
-                                                            {{ $status_pekerjaan == 'belum_dikerjakan' ? 'border-orange-500 bg-orange-500' : 'border-gray-300' }}">
-                                                            @if($status_pekerjaan == 'belum_dikerjakan')
-                                                                <div class="w-2 h-2 bg-white rounded-full"></div>
-                                                            @endif
-                                                        </div>
-                                                        <div>
-                                                            <div class="font-semibold text-gray-900">Belum Dikerjakan</div>
-                                                            <div class="text-sm text-gray-500">Mobil masih menunggu antrian</div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Sedang Dikerjakan -->
-                                            <div class="cursor-pointer" wire:click="$set('status_pekerjaan', 'sedang_dikerjakan')">
-                                                <div class="p-4 border-2 rounded-xl transition-all duration-300 hover:border-blue-300
-                                                    {{ $status_pekerjaan == 'sedang_dikerjakan' ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200' }}">
-                                                    <div class="flex items-center space-x-3">
-                                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center
-                                                            {{ $status_pekerjaan == 'sedang_dikerjakan' ? 'border-blue-500 bg-blue-500' : 'border-gray-300' }}">
-                                                            @if($status_pekerjaan == 'sedang_dikerjakan')
-                                                                <div class="w-2 h-2 bg-white rounded-full"></div>
-                                                            @endif
-                                                        </div>
-                                                        <div>
-                                                            <div class="font-semibold text-gray-900">Sedang Dikerjakan</div>
-                                                            <div class="text-sm text-gray-500">Pekerjaan sedang berlangsung</div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Selesai -->
-                                            <div class="cursor-pointer" wire:click="$set('status_pekerjaan', 'selesai')">
-                                                <div class="p-4 border-2 rounded-xl transition-all duration-300 hover:border-green-300
-                                                    {{ $status_pekerjaan == 'selesai' ? 'border-green-500 bg-green-50 shadow-md' : 'border-gray-200' }}">
-                                                    <div class="flex items-center space-x-3">
-                                                        <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center
-                                                            {{ $status_pekerjaan == 'selesai' ? 'border-green-500 bg-green-500' : 'border-gray-300' }}">
-                                                            @if($status_pekerjaan == 'selesai')
-                                                                <div class="w-2 h-2 bg-white rounded-full"></div>
-                                                            @endif
-                                                        </div>
-                                                        <div>
-                                                            <div class="font-semibold text-gray-900">Selesai</div>
-                                                            <div class="text-sm text-gray-500">Pekerjaan sudah selesai</div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Payment Strategy with Fixed Radio Buttons -->
-                                    <div class="bg-white rounded-2xl p-6 border border-gray-200">
-                                        <h3 class="text-lg font-semibold text-gray-800 mb-4">💰 Strategi Pembayaran</h3>
-                                        <div class="space-y-3">
-                                            <!-- Bayar Setelah Selesai -->
-                                            <div class="cursor-pointer" wire:click="$set('strategi_pembayaran', 'bayar_akhir')">
-                                                <div class="p-4 border-2 rounded-xl transition-all duration-300 hover:border-green-300
-                                                    {{ $strategi_pembayaran == 'bayar_akhir' ? 'border-green-500 bg-green-50 shadow-md' : 'border-gray-200' }}">
-                                                    <div class="flex items-center justify-between">
-                                                        <div class="flex items-center space-x-3">
-                                                            <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center
-                                                                {{ $strategi_pembayaran == 'bayar_akhir' ? 'border-green-500 bg-green-500' : 'border-gray-300' }}">
-                                                                @if($strategi_pembayaran == 'bayar_akhir')
-                                                                    <div class="w-2 h-2 bg-white rounded-full"></div>
-                                                                @endif
-                                                            </div>
-                                                            <div>
-                                                                <div class="font-semibold text-gray-900">Bayar Setelah Selesai</div>
-                                                                <div class="text-sm text-gray-500">Pembayaran saat mobil sudah selesai</div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="text-2xl">✅</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Bayar Dimuka -->
-                                            <div class="cursor-pointer" wire:click="$set('strategi_pembayaran', 'bayar_dimuka')">
-                                                <div class="p-4 border-2 rounded-xl transition-all duration-300 hover:border-blue-300
-                                                    {{ $strategi_pembayaran == 'bayar_dimuka' ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200' }}">
-                                                    <div class="flex items-center justify-between">
-                                                        <div class="flex items-center space-x-3">
-                                                            <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center
-                                                                {{ $strategi_pembayaran == 'bayar_dimuka' ? 'border-blue-500 bg-blue-500' : 'border-gray-300' }}">
-                                                                @if($strategi_pembayaran == 'bayar_dimuka')
-                                                                    <div class="w-2 h-2 bg-white rounded-full"></div>
-                                                                @endif
-                                                            </div>
-                                                            <div>
-                                                                <div class="font-semibold text-gray-900">Bayar Dimuka</div>
-                                                                <div class="text-sm text-gray-500">Bayar penuh saat mulai dikerjakan</div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="text-2xl">💸</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Cicilan Fleksibel -->
-                                            <div class="cursor-pointer" wire:click="$set('strategi_pembayaran', 'cicilan')">
-                                                <div class="p-4 border-2 rounded-xl transition-all duration-300 hover:border-purple-300
-                                                    {{ $strategi_pembayaran == 'cicilan' ? 'border-purple-500 bg-purple-50 shadow-md' : 'border-gray-200' }}">
-                                                    <div class="flex items-center justify-between">
-                                                        <div class="flex items-center space-x-3">
-                                                            <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center
-                                                                {{ $strategi_pembayaran == 'cicilan' ? 'border-purple-500 bg-purple-500' : 'border-gray-300' }}">
-                                                                @if($strategi_pembayaran == 'cicilan')
-                                                                    <div class="w-2 h-2 bg-white rounded-full"></div>
-                                                                @endif
-                                                            </div>
-                                                            <div>
-                                                                <div class="font-semibold text-gray-900">Cicilan Fleksibel</div>
-                                                                <div class="text-sm text-gray-500">Bisa bayar kapan saja, cicil atau lunas</div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="text-2xl">📊</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Payment Details & Status -->
-                                <div class="space-y-6">
-                                    <!-- Payment Form -->
-                                    <div class="bg-white rounded-2xl p-6 border border-gray-200">
-                                        <h3 class="text-lg font-semibold text-gray-800 mb-4">💳 Detail Pembayaran</h3>
-                                        
-                                        <div class="space-y-4">
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-700 mb-2">Metode Pembayaran</label>
-                                                <select wire:model="metode_pembayaran" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                                                    <option value="tunai">💵 Tunai</option>
-                                                    <option value="transfer">🏦 Transfer</option>
-                                                </select>
-                                            </div>
-
-                                            <!-- Enhanced Payment Amount Input with Business Logic Display -->
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                                    Jumlah Dibayar Sekarang
-                                                    @php
-                                                        $canPay = false;
-                                                        $paymentMessage = '';
-                                                        
-                                                        if ($strategi_pembayaran == 'bayar_akhir') {
-                                                            $canPay = $status_pekerjaan == 'selesai';
-                                                            $paymentMessage = $canPay ? '(Bisa dibayar - pekerjaan selesai)' : '(Tunggu pekerjaan selesai)';
-                                                        } elseif ($strategi_pembayaran == 'bayar_dimuka') {
-                                                            $canPay = in_array($status_pekerjaan, ['sedang_dikerjakan', 'selesai']);
-                                                            $paymentMessage = $canPay ? '(Bisa dibayar - pekerjaan dimulai)' : '(Tunggu pekerjaan dimulai)';
-                                                        } else {
-                                                            $canPay = true;
-                                                            $paymentMessage = '(Fleksibel - bisa bayar kapan saja)';
-                                                        }
-                                                    @endphp
-                                                    <span class="text-xs {{ $canPay ? 'text-green-600' : 'text-orange-500' }}">{{ $paymentMessage }}</span>
-                                                </label>
-                                                
-                                                <div class="relative">
-                                                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold">Rp</span>
-                                                    <input wire:model.live="jumlah_dibayar_sekarang" 
-                                                        type="number" min="0" max="{{ $this->total_keseluruhan }}"
-                                                        class="w-full pl-12 pr-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 font-semibold text-lg {{ !$canPay && $jumlah_dibayar_sekarang > 0 ? 'border-red-300 bg-red-50' : '' }}" 
-                                                        placeholder="0">
-                                                </div>
-                                                
-                                                @error('jumlah_dibayar_sekarang') 
-                                                    <span class="text-red-500 text-sm">{{ $message }}</span> 
-                                                @enderror
-                                                
-                                                <!-- Payment Validation Message -->
-                                                @if (!$canPay && $jumlah_dibayar_sekarang > 0)
-                                                    <div class="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                                        <div class="flex items-center space-x-2">
-                                                            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                                                            </svg>
-                                                            <span class="text-sm text-red-700">
-                                                                @if($strategi_pembayaran == 'bayar_akhir')
-                                                                    Pembayaran hanya bisa dilakukan setelah pekerjaan selesai
-                                                                @elseif($strategi_pembayaran == 'bayar_dimuka')
-                                                                    Pembayaran hanya bisa dilakukan setelah pekerjaan dimulai
-                                                                @endif
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                @endif
-                                            </div>
-
-                                            <!-- Quick Payment Buttons -->
-                                            @if($canPay && $this->total_keseluruhan > 0)
-                                                <div class="grid grid-cols-3 gap-2">
-                                                    <button type="button" 
-                                                            wire:click="$set('jumlah_dibayar_sekarang', 0)"
-                                                            class="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
-                                                        Tidak Bayar
-                                                    </button>
-                                                    <button type="button" 
-                                                            wire:click="$set('jumlah_dibayar_sekarang', {{ floor($this->total_keseluruhan / 2) }})"
-                                                            class="px-3 py-2 text-sm bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg transition-colors">
-                                                        50%
-                                                    </button>
-                                                    <button type="button" 
-                                                            wire:click="$set('jumlah_dibayar_sekarang', {{ $this->total_keseluruhan }})"
-                                                            class="px-3 py-2 text-sm bg-green-100 hover:bg-green-200 text-green-800 rounded-lg transition-colors">
-                                                        Lunas
-                                                    </button>
-                                                </div>
-                                            @endif
-
-                                            @if($this->status_pembayaran != 'lunas')
-                                                <div>
-                                                    <label class="block text-sm font-medium text-gray-700 mb-2">Jatuh Tempo (untuk sisa)</label>
-                                                    <input wire:model="jatuh_tempo" type="date" min="{{ date('Y-m-d') }}" 
-                                                        class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
-                                                </div>
-                                            @endif
-
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-700 mb-2">No. Surat Pesanan (Opsional)</label>
-                                                <input wire:model="no_surat_pesanan" type="text" 
-                                                    class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                                    placeholder="Nomor surat pesanan">
-                                            </div>
-
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-700 mb-2">Keterangan</label>
-                                                <textarea wire:model="keterangan_pembayaran" rows="2" 
-                                                        class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                                        placeholder="Keterangan tambahan untuk pembayaran"></textarea>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Enhanced Payment Status Display -->
-                                    @php
-                                        $statusPembayaran = $this->status_pembayaran;
-                                        $sisaPembayaran = $this->sisa_pembayaran;
-                                        $totalDibayar = $total_sudah_dibayar + $jumlah_dibayar_sekarang;
-                                    @endphp
-                                    
-                                    <div class="bg-gradient-to-r 
-                                        {{ $statusPembayaran == 'lunas' ? 'from-green-50 to-emerald-50 border-green-200' : 
-                                        ($statusPembayaran == 'sebagian' ? 'from-yellow-50 to-orange-50 border-yellow-200' : 'from-gray-50 to-slate-50 border-gray-200') }} 
-                                        border rounded-2xl p-6">
-                                        
-                                        <h4 class="font-bold text-xl mb-4
-                                            {{ $statusPembayaran == 'lunas' ? 'text-green-800' : 
-                                            ($statusPembayaran == 'sebagian' ? 'text-orange-800' : 'text-gray-800') }}">
-                                            
-                                            @if($statusPembayaran == 'lunas')
-                                                ✅ STATUS: LUNAS
-                                            @elseif($statusPembayaran == 'sebagian')
-                                                ⚠️ STATUS: SEBAGIAN DIBAYAR
-                                            @else
-                                                @if($strategi_pembayaran == 'bayar_akhir')
-                                                    ⏳ STATUS: MENUNGGU SELESAI
-                                                @elseif($strategi_pembayaran == 'bayar_dimuka')
-                                                    ⏳ STATUS: MENUNGGU MULAI
-                                                @else
-                                                    📋 STATUS: BELUM DIBAYAR
-                                                @endif
-                                            @endif
-                                        </h4>
-                                        
-                                        <div class="space-y-3">
-                                            <div class="flex justify-between items-center">
-                                                <span class="text-gray-700 font-medium">Total Tagihan:</span>
-                                                <span class="text-xl font-bold text-gray-900">Rp{{ number_format($this->total_keseluruhan, 0, ',', '.') }}</span>
-                                            </div>
-                                            
-                                            <div class="flex justify-between items-center">
-                                                <span class="text-gray-700 font-medium">Akan Dibayar Sekarang:</span>
-                                                <span class="text-lg font-semibold text-blue-600">Rp{{ number_format($jumlah_dibayar_sekarang, 0, ',', '.') }}</span>
-                                            </div>
-                                            
-                                            <div class="flex justify-between items-center pt-3 border-t border-gray-200">
-                                                <span class="text-gray-700 font-medium">
-                                                    @if($statusPembayaran == 'lunas')
-                                                        Status Pembayaran:
-                                                    @else
-                                                        Sisa Harus Dibayar:
-                                                    @endif
-                                                </span>
-                                                <span class="text-2xl font-bold 
-                                                    {{ $statusPembayaran == 'lunas' ? 'text-green-600' : 'text-orange-600' }}">
-                                                    @if($statusPembayaran == 'lunas')
-                                                        LUNAS
-                                                    @else
-                                                        Rp{{ number_format($sisaPembayaran, 0, ',', '.') }}
-                                                    @endif
-                                                </span>
-                                            </div>
-                                            
-                                            @if($statusPembayaran != 'lunas' && $jatuh_tempo)
-                                                <div class="text-center mt-4 p-3 bg-white/50 rounded-lg">
-                                                    <span class="text-sm text-gray-600">Jatuh Tempo Sisa: </span>
-                                                    <span class="font-semibold text-orange-700">{{ \Carbon\Carbon::parse($jatuh_tempo)->format('d F Y') }}</span>
-                                                </div>
-                                            @endif
-                                            
-                                            <!-- Payment Strategy Info -->
-                                            <div class="mt-4 p-3 bg-blue-50 rounded-lg">
-                                                <div class="text-sm text-blue-700">
-                                                    <strong>Strategi:</strong>
-                                                    @if($strategi_pembayaran == 'bayar_akhir')
-                                                        Bayar setelah pekerjaan selesai
-                                                        @if($status_pekerjaan != 'selesai')
-                                                            <span class="block text-xs mt-1 text-blue-600">⏳ Menunggu pekerjaan selesai untuk pembayaran</span>
-                                                        @else
-                                                            <span class="block text-xs mt-1 text-green-600">✅ Pekerjaan selesai, siap untuk dibayar</span>
-                                                        @endif
-                                                    @elseif($strategi_pembayaran == 'bayar_dimuka')
-                                                        Bayar dimuka saat mulai dikerjakan
-                                                        @if($status_pekerjaan == 'belum_dikerjakan')
-                                                            <span class="block text-xs mt-1 text-blue-600">⏳ Menunggu pekerjaan dimulai untuk pembayaran</span>
-                                                        @else
-                                                            <span class="block text-xs mt-1 text-green-600">✅ Pekerjaan dimulai, siap untuk dibayar</span>
-                                                        @endif
-                                                    @else
-                                                        Pembayaran fleksibel (cicilan/kapan saja)
-                                                        <span class="block text-xs mt-1 text-green-600">✅ Bisa dibayar kapan saja sesuai kebutuhan</span>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <div class="font-semibold text-gray-900">Belum Dikerjakan</div>
+                                    <div class="text-sm text-gray-500">Masih menunggu antrian</div>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    
+                    <!-- Sedang Dikerjakan -->
+                    <div class="cursor-pointer" wire:click="$set('status_pekerjaan', 'sedang_dikerjakan')">
+                        <div class="p-4 border-2 rounded-xl transition-all duration-300 hover:border-blue-300
+                            {{ $status_pekerjaan == 'sedang_dikerjakan' ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200' }}">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center
+                                    {{ $status_pekerjaan == 'sedang_dikerjakan' ? 'border-blue-500 bg-blue-500' : 'border-gray-300' }}">
+                                    @if($status_pekerjaan == 'sedang_dikerjakan')
+                                        <div class="w-2 h-2 bg-white rounded-full"></div>
+                                    @endif
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-gray-900">Sedang Dikerjakan</div>
+                                    <div class="text-sm text-gray-500">Pekerjaan berlangsung</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Selesai -->
+                    <div class="cursor-pointer" wire:click="$set('status_pekerjaan', 'selesai')">
+                        <div class="p-4 border-2 rounded-xl transition-all duration-300 hover:border-green-300
+                            {{ $status_pekerjaan == 'selesai' ? 'border-green-500 bg-green-50 shadow-md' : 'border-gray-200' }}">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center
+                                    {{ $status_pekerjaan == 'selesai' ? 'border-green-500 bg-green-500' : 'border-gray-300' }}">
+                                    @if($status_pekerjaan == 'selesai')
+                                        <div class="w-2 h-2 bg-white rounded-full"></div>
+                                    @endif
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-gray-900">Selesai</div>
+                                    <div class="text-sm text-gray-500">Pekerjaan sudah selesai</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Form -->
+            <div class="bg-white rounded-2xl p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">💳 Pembayaran</h3>
+                
+                <div class="space-y-4">
+                    <!-- Payment Method -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Cara Bayar</label>
+                        <select wire:model="metode_pembayaran" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                            <option value="tunai">💵 Tunai</option>
+                            <option value="transfer">🏦 Transfer</option>
+                        </select>
+                    </div>
+
+                    <!-- Payment Amount Input -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Bayar Sekarang</label>
+                        
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold">Rp</span>
+                            <input wire:model.live="jumlah_dibayar_sekarang" 
+                                type="number" min="0" max="{{ $this->total_keseluruhan }}"
+                                class="w-full pl-12 pr-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 font-semibold text-lg" 
+                                placeholder="0">
+                        </div>
+                        
+                        @error('jumlah_dibayar_sekarang') 
+                            <span class="text-red-500 text-sm">{{ $message }}</span> 
+                        @enderror
+                    </div>
+
+                    <!-- Quick Payment Buttons -->
+                    @if($this->total_keseluruhan > 0)
+                        <div class="grid grid-cols-3 gap-2">
+                            <button type="button" 
+                                    wire:click="$set('jumlah_dibayar_sekarang', 0)"
+                                    class="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                                Belum Bayar
+                            </button>
+                            <button type="button" 
+                                    wire:click="$set('jumlah_dibayar_sekarang', {{ floor($this->total_keseluruhan / 2) }})"
+                                    class="px-3 py-2 text-sm bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg transition-colors">
+                                Setengah
+                            </button>
+                            <button type="button" 
+                                    wire:click="$set('jumlah_dibayar_sekarang', {{ $this->total_keseluruhan }})"
+                                    class="px-3 py-2 text-sm bg-green-100 hover:bg-green-200 text-green-800 rounded-lg transition-colors">
+                                Lunas
+                            </button>
+                        </div>
                     @endif
+
+                    <!-- Due Date (only if not fully paid) -->
+                    @if($this->status_pembayaran != 'lunas')
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Jatuh Tempo Sisa</label>
+                            <input wire:model="jatuh_tempo" type="date" min="{{ date('Y-m-d') }}" 
+                                class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                        </div>
+                    @endif
+
+                    <!-- Optional Fields -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">No. Surat Pesanan (Opsional)</label>
+                        <input wire:model="no_surat_pesanan" type="text" 
+                            class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="Nomor surat pesanan">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Catatan</label>
+                        <textarea wire:model="keterangan_pembayaran" rows="2" 
+                                class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                placeholder="Keterangan tambahan"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Simplified Payment Status Display -->
+        @php
+            $statusPembayaran = $this->status_pembayaran;
+            $sisaPembayaran = $this->sisa_pembayaran;
+            $totalDibayar = $total_sudah_dibayar + $jumlah_dibayar_sekarang;
+        @endphp
+        
+        <div class="bg-gradient-to-r 
+            {{ $statusPembayaran == 'lunas' ? 'from-green-50 to-emerald-50 border-green-200' : 
+            ($statusPembayaran == 'sebagian' ? 'from-yellow-50 to-orange-50 border-yellow-200' : 'from-gray-50 to-slate-50 border-gray-200') }} 
+            border rounded-2xl p-6">
+            
+            <h4 class="font-bold text-xl mb-4
+                {{ $statusPembayaran == 'lunas' ? 'text-green-800' : 
+                ($statusPembayaran == 'sebagian' ? 'text-orange-800' : 'text-gray-800') }}">
+                
+                @if($statusPembayaran == 'lunas')
+                    ✅ LUNAS
+                @elseif($statusPembayaran == 'sebagian')
+                    ⚠️ CICILAN
+                @else
+                    📋 BELUM BAYAR
+                @endif
+            </h4>
+            
+            <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700 font-medium">Total Tagihan:</span>
+                    <span class="text-xl font-bold text-gray-900">Rp{{ number_format($this->total_keseluruhan, 0, ',', '.') }}</span>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-700 font-medium">Bayar Sekarang:</span>
+                    <span class="text-lg font-semibold text-blue-600">Rp{{ number_format($jumlah_dibayar_sekarang, 0, ',', '.') }}</span>
+                </div>
+                
+                <div class="flex justify-between items-center pt-3 border-t border-gray-200">
+                    <span class="text-gray-700 font-medium">
+                        @if($statusPembayaran == 'lunas')
+                            Status:
+                        @else
+                            Sisa Tagihan:
+                        @endif
+                    </span>
+                    <span class="text-2xl font-bold 
+                        {{ $statusPembayaran == 'lunas' ? 'text-green-600' : 'text-orange-600' }}">
+                        @if($statusPembayaran == 'lunas')
+                            LUNAS
+                        @else
+                            Rp{{ number_format($sisaPembayaran, 0, ',', '.') }}
+                        @endif
+                    </span>
+                </div>
+                
+                @if($statusPembayaran != 'lunas' && $jatuh_tempo)
+                    <div class="text-center mt-4 p-3 bg-white/50 rounded-lg">
+                        <span class="text-sm text-gray-600">Jatuh Tempo: </span>
+                        <span class="font-semibold text-orange-700">{{ \Carbon\Carbon::parse($jatuh_tempo)->format('d F Y') }}</span>
+                    </div>
+                @endif
+
+                <!-- Simple Status Info -->
+                <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <div class="text-sm text-blue-700 text-center">
+                        💡 <strong>Pembayaran Fleksibel:</strong> Bisa bayar berapa saja, kapan saja
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
 
                     <!-- Navigation Buttons -->
                     <div class="flex justify-between items-center pt-6 border-t border-gray-200">
@@ -1015,6 +985,7 @@
                         </div>
                         
                         <!-- Input Forms -->
+                        <!-- Input Forms -->
                         <div class="col-span-3 grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-base font-bold text-gray-700 mb-3">Jumlah</label>
@@ -1027,7 +998,7 @@
                                 <label class="block text-base font-bold text-gray-700 mb-3">Harga Jual</label>
                                 <div class="relative">
                                     <span class="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold text-base">Rp</span>
-                                    <input wire:model="harga_jual" type="number" min="0" step="1"
+                                    <input wire:model="harga_jual" type="number" min="0" step="0.01"
                                            class="w-full pl-12 pr-5 py-4 bg-white border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 font-semibold text-center text-xl" 
                                            placeholder="0" />
                                 </div>
@@ -1052,89 +1023,6 @@
         </div>
     </div>
     
-    <style>
-        @keyframes fadeInUp {
-            from { 
-                opacity: 0; 
-                transform: translateY(20px) scale(0.95); 
-            }
-            to { 
-                opacity: 1; 
-                transform: translateY(0) scale(1); 
-            }
-        }
-
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: linear-gradient(to bottom, #f8fafc, #e2e8f0);
-            border-radius: 10px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: linear-gradient(to bottom, #cbd5e0, #a0aec0);
-            border-radius: 10px;
-            border: 2px solid #f8fafc;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(to bottom, #a0aec0, #718096);
-        }
-
-        .item-card:hover {
-            transform: translateY(-4px) scale(1.02);
-        }
-
-        .backdrop-blur-xl {
-            backdrop-filter: blur(20px);
-        }
-
-        .backdrop-blur-2xl {
-            backdrop-filter: blur(40px);
-        }
-
-        /* Enhanced focus states */
-        input:focus, select:focus, textarea:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        /* Smooth transitions for all interactive elements */
-        * {
-            transition-property: transform, box-shadow, background-color, border-color, color, opacity;
-            transition-duration: 0.2s;
-            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        /* Disabled button styles */
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        /* Grid layout fix for form */
-        .grid.grid-cols-16 {
-            grid-template-columns: repeat(16, 1fr);
-        }
-
-        /* Loading animation */
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .animate-spin {
-            animation: spin 1s linear infinite;
-        }
-
-        /* Enhanced radio button styles */
-        input[type="radio"]:checked + div {
-            transform: scale(1.02);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-    </style>
 <style>
 /* Enhanced radio button styles for better UX */
 .cursor-pointer:hover {
@@ -1324,19 +1212,19 @@ document.addEventListener('livewire:init', () => {
     });
 });
 
-function showLoadingOverlay() {
-    const overlay = document.createElement('div');
-    overlay.id = 'loading-overlay';
-    overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-    overlay.innerHTML = `
-        <div class="bg-white rounded-2xl p-8 flex flex-col items-center space-y-4">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-green-500"></div>
-            <div class="text-lg font-semibold text-gray-900">Menyimpan Transaksi...</div>
-            <div class="text-sm text-gray-500">Mohon tunggu sebentar</div>
-        </div>
-    `;
-    document.body.appendChild(overlay);
-}
+// function showLoadingOverlay() {
+//     const overlay = document.createElement('div');
+//     overlay.id = 'loading-overlay';
+//     overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+//     overlay.innerHTML = `
+//         <div class="bg-white rounded-2xl p-8 flex flex-col items-center space-y-4">
+//             <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-green-500"></div>
+//             <div class="text-lg font-semibold text-gray-900">Menyimpan Transaksi...</div>
+//             <div class="text-sm text-gray-500">Mohon tunggu sebentar</div>
+//         </div>
+//     `;
+//     document.body.appendChild(overlay);
+// }
 
 function hideLoadingOverlay() {
     const overlay = document.getElementById('loading-overlay');
@@ -1423,6 +1311,37 @@ document.addEventListener('input', function(e) {
         e.target.value = e.target.value.toUpperCase();
     }
 });
+
+function toggleManualInput() {
+                                const form = document.getElementById('manualInputForm');
+                                if (form.classList.contains('hidden')) {
+                                    form.classList.remove('hidden');
+                                    form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                } else {
+                                    form.classList.add('hidden');
+                                }
+                            }
+                            
+                            // Listen for Livewire events
+                            document.addEventListener('livewire:initialized', () => {
+                                Livewire.on('hide-manual-form', () => {
+                                    const form = document.getElementById('manualInputForm');
+                                    form.classList.add('hidden');
+                                });
+                                
+                                Livewire.on('manual-item-added', () => {
+                                    // Show success notification
+                                    const notification = document.createElement('div');
+                                    notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                                    notification.innerHTML = '✅ Barang manual berhasil ditambahkan!';
+                                    document.body.appendChild(notification);
+                                    
+                                    // Remove notification after 3 seconds
+                                    setTimeout(() => {
+                                        notification.remove();
+                                    }, 3000);
+                                });
+                            });
 
 // console.log('Enhanced payment system with fixed logic loaded');
 console.log('Payment strategies: bayar_akhir, bayar_dimuka, cicilan');

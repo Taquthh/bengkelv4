@@ -43,6 +43,12 @@ class RiwayatTransaksiBarang extends Component
         'page' => ['except' => 1],
     ];
 
+    public function updatingPage()
+    {
+        $this->resetPage();
+    }
+
+
     public function mount()
     {
         // Set default tanggal ke bulan ini

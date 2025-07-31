@@ -281,7 +281,7 @@
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <!-- Tombol untuk melihat riwayat servis mobil -->
-                            <a href="/" class="flex items-center gap-4 bg-blue-100 dark:bg-blue-950 border border-blue-300 dark:border-blue-700 p-4 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition">
+                            <a href="{{ route('riwayat.service') }}" class="flex items-center gap-4 bg-blue-100 dark:bg-blue-950 border border-blue-300 dark:border-blue-700 p-4 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition">
                                 <div class="p-3 bg-blue-500 text-white rounded-lg">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

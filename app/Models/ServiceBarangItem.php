@@ -10,25 +10,75 @@ class ServiceBarangItem extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $table = 'service_barang_items';
+        protected $table = 'service_barang_items';
+
+    // Hapus semua validation rules dari model
+    // Validation harus dilakukan di controller/livewire
     
     protected $fillable = [
         'transaksi_service_id',
-        'pembelian_id',
         'barang_id',
+        'pembelian_id', 
+        'nama_barang_manual',
         'jumlah',
+        'satuan',
         'harga_jual',
         'subtotal',
+        'is_manual',
+        'keterangan',
     ];
+    
 
     protected $casts = [
-        'jumlah' => 'integer',
+        'is_manual' => 'boolean',
         'harga_jual' => 'decimal:2',
         'subtotal' => 'decimal:2',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'jumlah' => 'integer',
     ];
+
+    // Get display name (either from barang or manual name)
+    public function getDisplayNameAttribute()
+    {
+        if ($this->is_manual) {
+            return $this->nama_barang_manual;
+        }
+        
+        return $this->barang ? $this->barang->nama : 'Unknown Item';
+    }
+
+    public function getNamaBarangAttribute()
+    {
+        if ($this->is_manual) {
+            return $this->nama_barang_manual;
+        }
+        
+        return $this->barang ? $this->barang->nama : 'Barang tidak ditemukan';
+    }
+    
+    public function getSatuanBarangAttribute()
+    {
+        if ($this->is_manual) {
+            return $this->satuan;
+        }
+        
+        return $this->barang ? $this->barang->satuan : 'pcs';
+    }
+
+    // Scopes
+    public function scopeManual($query)
+    {
+        return $query->where('is_manual', true);
+    }
+
+    public function scopeRegular($query)
+    {
+        return $query->where('is_manual', false);
+    }
+
+    public function scopeByStatus($query, $status)
+    {
+        return $query->where('status_barang', $status);
+    }
 
     // Relationships
     public function transaksiService()
@@ -88,11 +138,6 @@ class ServiceBarangItem extends Model
         if ($hargaBeli == 0) return 0;
         
         return round(($this->laba_kotor / $hargaBeli) * 100, 2);
-    }
-
-    public function getNamaBarangAttribute()
-    {
-        return $this->barang ? $this->barang->nama : 'Barang Tidak Ditemukan';
     }
 
     public function getNamaBarangLengkapAttribute()
@@ -224,22 +269,25 @@ class ServiceBarangItem extends Model
         parent::boot();
 
         static::creating(function ($item) {
-            // Validate required fields
-            if (!$item->barang_id || !$item->pembelian_id || !$item->transaksi_service_id) {
-                throw new \Exception('barang_id, pembelian_id, dan transaksi_service_id wajib diisi');
+            // Skip stock validation for manual item
+            if (!$item->is_manual) {
+                if (!$item->barang_id || !$item->pembelian_id || !$item->transaksi_service_id) {
+                    throw new \Exception('barang_id, pembelian_id, dan transaksi_service_id wajib diisi');
+                }
+
+                // Validate stock availability
+                $pembelian = Pembelian::find($item->pembelian_id);
+                if (!$pembelian || $pembelian->jumlah_tersisa < $item->jumlah) {
+                    throw new \Exception('Stok tidak mencukupi');
+                }
             }
 
-            // Validate stock availability
-            $pembelian = Pembelian::find($item->pembelian_id);
-            if (!$pembelian || $pembelian->jumlah_tersisa < $item->jumlah) {
-                throw new \Exception('Stok tidak mencukupi');
-            }
-
-            // Auto calculate subtotal if not provided
+            // Auto calculate subtotal if not provided (applies to all)
             if (is_null($item->subtotal) && $item->jumlah && $item->harga_jual) {
                 $item->subtotal = $item->jumlah * $item->harga_jual;
             }
         });
+
 
         static::created(function ($item) {
             // Reduce stock from pembelian

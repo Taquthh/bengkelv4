@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use Illuminate\Support\Str;
 use Livewire\Component;
 use App\Models\Barang;
 use App\Models\PelangganMobil;
@@ -46,6 +47,11 @@ class TransaksiServices extends Component
     public $itemsBarang = [];
     public $jumlah = 1;
     public $harga_jual = 0;
+
+    public $nama_barang_manual = '';
+    public $jumlah_manual = 1;
+    public $satuan_manual = 'pcs';
+    public $harga_jual_manual = 0;
     
     // Data Jasa
     public $itemsJasa = [];
@@ -55,8 +61,8 @@ class TransaksiServices extends Component
     
     // Enhanced Payment System
     public $metode_pembayaran = 'tunai';
-    public $status_pekerjaan = 'belum_dikerjakan';
-    public $strategi_pembayaran = 'bayar_akhir';
+    public $strategi_pembayaran = 'cicilan'; // Set default ke cicilan
+    public $status_pekerjaan = 'belum_dikerjakan'; // Keep this for work status
     public $jumlah_dibayar_sekarang = 0;
     public $jatuh_tempo = '';
     public $no_surat_pesanan = '';
@@ -81,9 +87,14 @@ class TransaksiServices extends Component
         'nopol' => 'required|string|max:15',
         'keluhan' => 'required|string',
         'metode_pembayaran' => 'required|in:tunai,transfer',
-        'strategi_pembayaran' => 'required|in:bayar_akhir,bayar_dimuka,cicilan',
         'jumlah_dibayar_sekarang' => 'required|numeric|min:0',
         'status_pekerjaan' => 'required|in:belum_dikerjakan,sedang_dikerjakan,selesai',
+
+        // Rules untuk barang manual
+        'nama_barang_manual' => 'required|string|max:255',
+        'jumlah_manual' => 'required|integer|min:1',
+        'satuan_manual' => 'required|string|max:20',
+        'harga_jual_manual' => 'required|numeric|min:0',
     ];
 
     protected $messages = [
@@ -94,6 +105,15 @@ class TransaksiServices extends Component
         'keluhan.required' => 'Keluhan wajib diisi.',
         'jumlah_dibayar_sekarang.required' => 'Jumlah pembayaran wajib diisi.',
         'jumlah_dibayar_sekarang.min' => 'Jumlah pembayaran tidak boleh negatif.',
+
+        // Messages untuk barang manual
+        'nama_barang_manual.required' => 'Nama barang wajib diisi.',
+        'nama_barang_manual.max' => 'Nama barang maksimal 255 karakter.',
+        'jumlah_manual.required' => 'Jumlah barang wajib diisi.',
+        'jumlah_manual.min' => 'Jumlah minimal 1.',
+        'satuan_manual.required' => 'Satuan wajib dipilih.',
+        'harga_jual_manual.required' => 'Harga jual wajib diisi.',
+        'harga_jual_manual.min' => 'Harga jual tidak boleh negatif.',
     ];
 
     public function mount()
@@ -103,7 +123,7 @@ class TransaksiServices extends Component
         $this->jatuh_tempo = now()->addDays(30)->format('Y-m-d');
         $this->jumlah_dibayar_sekarang = 0;
         $this->status_pekerjaan = 'belum_dikerjakan';
-        $this->strategi_pembayaran = 'bayar_akhir';
+        $this->strategi_pembayaran = 'cicilan'; // Set ke cicilan by default
     }
 
     public function loadBarangs()
@@ -172,6 +192,23 @@ class TransaksiServices extends Component
         }
     }
 
+    public function updatedJenisPelanggan()
+    {
+        logger("Jenis pelanggan berubah ke: " . $this->jenis_pelanggan);
+    }
+
+    
+
+    // Method untuk reset form barang manual
+    public function resetManualInputs()
+    {
+        $this->nama_barang_manual = '';
+        $this->jumlah_manual = 1;
+        $this->satuan_manual = 'pcs';
+        $this->harga_jual_manual = 0;
+        $this->resetErrorBag(['nama_barang_manual', 'jumlah_manual', 'satuan_manual', 'harga_jual_manual', 'catatan_manual']);
+    }
+
     public function selectBarang($barangId)
     {
         $barang = collect($this->barangs)->firstWhere('id', $barangId);
@@ -209,41 +246,54 @@ class TransaksiServices extends Component
             }
 
             $existingIndex = collect($this->itemsBarang)->search(function($item) {
-                return $item['barang_id'] == $this->barang_id;
+                return isset($item['barang_id']) && $item['barang_id'] == $this->barang_id;
             });
 
             if ($existingIndex !== false) {
                 $totalJumlah = $this->itemsBarang[$existingIndex]['jumlah'] + $this->jumlah;
-                
                 if ($totalJumlah > $totalStokTersedia) {
                     $this->addError('jumlah', 'Total jumlah melebihi stok tersedia.');
                     return;
                 }
-                
                 $this->itemsBarang[$existingIndex]['jumlah'] = $totalJumlah;
                 $this->itemsBarang[$existingIndex]['harga_jual'] = $this->harga_jual;
                 $this->itemsBarang[$existingIndex]['subtotal'] = $totalJumlah * $this->harga_jual;
             } else {
-                $this->itemsBarang[] = [
+                // Pastikan semua field yang diperlukan ada
+                $newRegularItem = [
                     'barang_id' => $this->barang_id,
-                    'nama' => $this->selectedBarangInfo['nama'],
+                    'nama' => $this->selectedBarangInfo['nama'] ?? 'Nama tidak ditemukan',
                     'jumlah' => $this->jumlah,
                     'harga_jual' => $this->harga_jual,
                     'subtotal' => $this->jumlah * $this->harga_jual,
-                    'stok_tersedia' => $totalStokTersedia
+                    'stok_tersedia' => $totalStokTersedia,
+                    'is_manual' => false // Explicitly set as regular item
                 ];
+
+                $this->itemsBarang[] = $newRegularItem;
             }
 
             $this->resetFormInputs();
             $this->dispatch('item-added');
-            
-            // Update payment amount after adding item
             $this->updatePaymentAmount();
+
+            Log::info('Regular item added successfully', [
+                'nama' => $this->selectedBarangInfo['nama'] ?? 'Nama tidak ditemukan',
+                'jumlah' => $this->jumlah,
+                'total_items' => count($this->itemsBarang)
+            ]);
+
         } catch (\Exception $e) {
             Log::error('Error adding item barang: ' . $e->getMessage());
             $this->addError('general', 'Terjadi kesalahan saat menambah item.');
         }
     }
+
+    public function updatedBarangId($value)
+    {
+        $this->selectedBarangInfo = Barang::find($value)?->toArray();
+    }
+
 
     public function hapusItemBarang($index)
     {
@@ -284,43 +334,23 @@ class TransaksiServices extends Component
     // Fixed payment amount calculation
     public function updatePaymentAmount()
     {
+        // Sistem cicilan fleksibel - tidak ada pembatasan
         $total = $this->getTotalKeseluruhanProperty();
         
-        // Only auto-set payment amount, don't force it
-        switch ($this->strategi_pembayaran) {
-            case 'bayar_dimuka':
-                // Can pay when work starts (sedang_dikerjakan or selesai)
-                if (in_array($this->status_pekerjaan, ['sedang_dikerjakan', 'selesai'])) {
-                    // Don't auto-set to full amount, let user decide
-                    if ($this->jumlah_dibayar_sekarang == 0) {
-                        $this->jumlah_dibayar_sekarang = $total;
-                    }
-                } else {
-                    $this->jumlah_dibayar_sekarang = 0;
-                }
-                break;
-                
-            case 'bayar_akhir':
-                // Can only pay when work is completed
-                if ($this->status_pekerjaan === 'selesai') {
-                    if ($this->jumlah_dibayar_sekarang == 0) {
-                        $this->jumlah_dibayar_sekarang = $total;
-                    }
-                } else {
-                    $this->jumlah_dibayar_sekarang = 0;
-                }
-                break;
-                
-            case 'cicilan':
-                // Flexible payment - don't auto-change amount
-                // Keep whatever amount user has entered
-                break;
+        // Pastikan tidak melebihi total dan tidak negatif
+        if ($this->jumlah_dibayar_sekarang > $total) {
+            $this->jumlah_dibayar_sekarang = $total;
+        }
+        
+        if ($this->jumlah_dibayar_sekarang < 0) {
+            $this->jumlah_dibayar_sekarang = 0;
         }
     }
 
-    // Fixed payment strategy handlers
+    // Method ini bisa dihapus atau disederhanakan:
     public function updatedStrategiPembayaran($value)
     {
+        // Tidak perlu lagi karena selalu cicilan
         $this->updatePaymentAmount();
     }
 
@@ -422,7 +452,7 @@ class TransaksiServices extends Component
         } elseif ($totalDibayar > 0) {
             return 'sebagian';
         } else {
-            return 'belum_bayar';
+            return 'belum';
         }
     }
 
@@ -437,122 +467,119 @@ class TransaksiServices extends Component
     // Fixed payment validation logic
     public function canMakePayment()
     {
-        switch ($this->strategi_pembayaran) {
-            case 'bayar_akhir':
-                return $this->status_pekerjaan === 'selesai';
-                
-            case 'bayar_dimuka':
-                return in_array($this->status_pekerjaan, ['sedang_dikerjakan', 'selesai']);
-                
-            case 'cicilan':
-                return true; // Always can pay
-                
-            default:
-                return false;
-        }
+        return true; // Selalu bisa bayar karena sistem cicilan fleksibel
     }
 
-    public function simpanTransaksi()
+public function simpanTransaksi()
     {
-        // Prevent double submission
         if ($this->isSaving) {
             return;
         }
 
-        // Set saving state
         $this->isSaving = true;
         $this->isLoading = true;
-        
+
         try {
-            // Clear previous errors
             $this->resetErrorBag();
-            
-            // Emit saving event for UI feedback
             $this->dispatch('transaction-saving');
-            
-            // Debug log
+
             Log::info('Starting simpanTransaksi', [
-                'user_id' => auth()->id(),
-                'nama_pelanggan' => $this->nama_pelanggan,
-                'total_keseluruhan' => $this->getTotalKeseluruhanProperty(),
-                'items_barang_count' => count($this->itemsBarang),
-                'items_jasa_count' => count($this->itemsJasa),
-                'strategi_pembayaran' => $this->strategi_pembayaran,
-                'status_pekerjaan' => $this->status_pekerjaan,
-                'jumlah_dibayar_sekarang' => $this->jumlah_dibayar_sekarang
+                'items_barang' => $this->itemsBarang,
+                'items_jasa' => $this->itemsJasa,
             ]);
 
             // Basic validation
-            $validationRules = [
+            $this->validate([
                 'nama_pelanggan' => 'required|string|max:255',
                 'merk_mobil' => 'required|string|max:100',
-                'tipe_mobil' => 'required|string|max:100', 
+                'tipe_mobil' => 'required|string|max:100',
                 'nopol' => 'required|string|max:15',
                 'keluhan' => 'required|string',
                 'metode_pembayaran' => 'required|in:tunai,transfer',
-                'strategi_pembayaran' => 'required|in:bayar_akhir,bayar_dimuka,cicilan',
                 'status_pekerjaan' => 'required|in:belum_dikerjakan,sedang_dikerjakan,selesai',
                 'jumlah_dibayar_sekarang' => 'required|numeric|min:0',
-            ];
+            ]);
 
-            $this->validate($validationRules);
-
-            // Check if at least one item exists
             if (empty($this->itemsBarang) && empty($this->itemsJasa)) {
                 $this->addError('general', 'Minimal tambahkan satu item barang atau jasa');
-                $this->dispatch('transaction-error', ['message' => 'Minimal tambahkan satu item barang atau jasa']);
                 return;
             }
 
-            $totalKeseluruhan = $this->getTotalKeseluruhanProperty();
-            
-            // Validate payment amount
-            if ($this->jumlah_dibayar_sekarang > $totalKeseluruhan) {
-                $this->addError('jumlah_dibayar_sekarang', 'Jumlah dibayar tidak boleh melebihi total keseluruhan');
-                $this->dispatch('transaction-error', ['message' => 'Jumlah dibayar tidak boleh melebihi total keseluruhan']);
-                return;
-            }
+            // Validate items data integrity
+            foreach ($this->itemsBarang as $index => $item) {
+                if (!is_array($item)) {
+                    $this->addError('general', "Item barang ke-{$index} tidak valid");
+                    return;
+                }
 
-            // Fixed business logic validation based on payment strategy
-            if ($this->jumlah_dibayar_sekarang > 0) {
-                if (!$this->canMakePayment()) {
-                    $errorMessage = '';
-                    switch ($this->strategi_pembayaran) {
-                        case 'bayar_dimuka':
-                            $errorMessage = 'Untuk strategi bayar dimuka, pekerjaan harus dimulai dulu sebelum ada pembayaran';
-                            break;
-                        case 'bayar_akhir':
-                            $errorMessage = 'Untuk strategi bayar akhir, pekerjaan harus selesai dulu sebelum ada pembayaran';
-                            break;
+                // Check required fields for all items
+                if (!isset($item['nama']) || empty($item['nama'])) {
+                    $this->addError('general', "Nama barang ke-{$index} tidak boleh kosong");
+                    return;
+                }
+
+                if (!isset($item['jumlah']) || $item['jumlah'] <= 0) {
+                    $this->addError('general', "Jumlah barang '{$item['nama']}' harus lebih dari 0");
+                    return;
+                }
+
+                if (!isset($item['harga_jual']) || $item['harga_jual'] < 0) {
+                    $this->addError('general', "Harga jual barang '{$item['nama']}' tidak valid");
+                    return;
+                }
+
+                if (!isset($item['subtotal']) || $item['subtotal'] < 0) {
+                    $this->addError('general', "Subtotal barang '{$item['nama']}' tidak valid");
+                    return;
+                }
+
+                // Validate manual items
+                if (isset($item['is_manual']) && $item['is_manual']) {
+                    if (!isset($item['satuan']) || empty($item['satuan'])) {
+                        $item['satuan'] = 'pcs'; // Set default
                     }
-                    $this->addError('general', $errorMessage);
-                    $this->dispatch('transaction-error', ['message' => $errorMessage]);
+                    Log::info("Manual item validated", ['item' => $item]);
+                } else {
+                    // Validate regular items
+                    if (!isset($item['barang_id']) || empty($item['barang_id'])) {
+                        $this->addError('general', "ID barang untuk '{$item['nama']}' tidak valid");
+                        return;
+                    }
+
+                    // Check stock availability
+                    $availableStock = Pembelian::where('barang_id', $item['barang_id'])
+                        ->where('jumlah_tersisa', '>', 0)
+                        ->sum('jumlah_tersisa');
+
+                    if ($item['jumlah'] > $availableStock) {
+                        $this->addError('general', "Stok {$item['nama']} tidak mencukupi. Tersedia: {$availableStock}");
+                        return;
+                    }
+                    Log::info("Regular item validated", ['item' => $item, 'available_stock' => $availableStock]);
+                }
+            }
+
+            // Validate jasa items
+            foreach ($this->itemsJasa as $index => $jasa) {
+                if (!is_array($jasa)) {
+                    $this->addError('general', "Item jasa ke-{$index} tidak valid");
+                    return;
+                }
+
+                if (!isset($jasa['nama_jasa']) || empty($jasa['nama_jasa'])) {
+                    $this->addError('general', "Nama jasa ke-{$index} tidak boleh kosong");
+                    return;
+                }
+
+                if (!isset($jasa['harga_jasa']) || $jasa['harga_jasa'] < 0) {
+                    $this->addError('general', "Harga jasa '{$jasa['nama_jasa']}' tidak valid");
                     return;
                 }
             }
 
-            // Validate stock availability before transaction
-            foreach ($this->itemsBarang as $item) {
-                $availableStock = Pembelian::where('barang_id', $item['barang_id'])
-                    ->where('jumlah_tersisa', '>', 0)
-                    ->sum('jumlah_tersisa');
-                    
-                if ($item['jumlah'] > $availableStock) {
-                    $this->addError('general', "Stok {$item['nama']} tidak mencukupi. Tersedia: {$availableStock}");
-                    $this->dispatch('transaction-error', ['message' => "Stok {$item['nama']} tidak mencukupi"]);
-                    return;
-                }
-            }
-
-            // Set default jatuh tempo for unpaid transactions
-            if ($this->getStatusPembayaranProperty() !== 'lunas' && empty($this->jatuh_tempo)) {
-                $this->jatuh_tempo = now()->addDays(30)->format('Y-m-d');
-            }
-
-            // Start database transaction
             DB::beginTransaction();
-            
-            // 1. Create or update PelangganMobil
+
+            // 1. Create PelangganMobil
             $pelangganMobil = PelangganMobil::updateOrCreate(
                 ['nopol' => strtoupper($this->nopol)],
                 [
@@ -570,13 +597,7 @@ class TransaksiServices extends Component
 
             Log::info('PelangganMobil created/updated', ['id' => $pelangganMobil->id]);
 
-            // 2. Calculate totals and payment status
-            $totalBarang = $this->getTotalBarangProperty();
-            $totalJasa = $this->getTotalJasaProperty();
-            $statusPembayaran = $this->getStatusPembayaranProperty();
-            $sisaPembayaran = $this->getSisaPembayaranProperty();
-
-            // 3. Create TransaksiService
+            // 2. Create TransaksiService
             $transaksiService = TransaksiService::create([
                 'invoice' => $this->generateInvoice(),
                 'pelanggan_mobil_id' => $pelangganMobil->id,
@@ -586,53 +607,130 @@ class TransaksiServices extends Component
                 'diagnosa' => $this->diagnosa ?: null,
                 'pekerjaan_dilakukan' => $this->pekerjaan_dilakukan ?: null,
                 'metode_pembayaran' => $this->metode_pembayaran,
-                'strategi_pembayaran' => $this->strategi_pembayaran,
-                'status_pekerjaan' => $this->status_pekerjaan,
-                'status_pembayaran' => $statusPembayaran,
-                'total_barang' => $totalBarang,
-                'total_jasa' => $totalJasa,
-                'total_keseluruhan' => $totalKeseluruhan,
+                'strategi_pembayaran' => 'cicilan', // Set tetap ke cicilan
+                'status_pekerjaan' => $this->status_pekerjaan, // Set default
+                'status_pembayaran' => $this->getStatusPembayaranProperty(),
+                'total_barang' => $this->getTotalBarangProperty(),
+                'total_jasa' => $this->getTotalJasaProperty(),
+                'total_keseluruhan' => $this->getTotalKeseluruhanProperty(),
                 'total_sudah_dibayar' => $this->total_sudah_dibayar + $this->jumlah_dibayar_sekarang,
-                'sisa_pembayaran' => $sisaPembayaran,
-                'jatuh_tempo' => ($statusPembayaran !== 'lunas') ? $this->jatuh_tempo : null,
+                'sisa_pembayaran' => $this->getSisaPembayaranProperty(),
+                'jatuh_tempo' => ($this->getStatusPembayaranProperty() !== 'lunas') ? $this->jatuh_tempo : null,
                 'no_surat_pesanan' => $this->no_surat_pesanan ?: null,
                 'keterangan_pembayaran' => $this->keterangan_pembayaran ?: null,
             ]);
 
             Log::info('TransaksiService created', ['id' => $transaksiService->id, 'invoice' => $transaksiService->invoice]);
 
-            // 4. Create ServiceBarangItems and reduce stock using FIFO
-            foreach ($this->itemsBarang as $item) {
-                $usedPembelians = $this->reduceStockFifo($item['barang_id'], $item['jumlah']);
-                
-                foreach ($usedPembelians as $used) {
-                    ServiceBarangItem::create([
-                        'transaksi_service_id' => $transaksiService->id,
-                        'pembelian_id' => $used['pembelian_id'],
-                        'barang_id' => $item['barang_id'],
-                        'jumlah' => $used['jumlah'],
-                        'harga_jual' => $item['harga_jual'],
-                        'subtotal' => $used['jumlah'] * $item['harga_jual'],
+            // 3. Create ServiceBarangItems
+            foreach ($this->itemsBarang as $index => $item) {
+                try {
+                    // Ensure item is valid
+                    if (!is_array($item) || !isset($item['nama'])) {
+                        throw new \Exception("Item barang ke-{$index} tidak valid atau nama kosong");
+                    }
+
+                    $itemName = $item['nama'];
+                    Log::info("Processing barang item {$index}: {$itemName}", ['item' => $item]);
+
+                    if (isset($item['is_manual']) && $item['is_manual']) {
+                        // Manual item
+                        $manualData = [
+                            'transaksi_service_id' => $transaksiService->id,
+                            'barang_id' => null,
+                            'pembelian_id' => null,
+                            'nama_barang_manual' => $itemName,
+                            'jumlah' => (int) $item['jumlah'],
+                            'satuan' => $item['satuan'] ?? 'pcs',
+                            'harga_jual' => (float) $item['harga_jual'],
+                            'subtotal' => (float) $item['subtotal'],
+                            'is_manual' => true,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+
+                        Log::info('Creating manual item', ['data' => $manualData]);
+
+                        $insertedId = DB::table('service_barang_items')->insertGetId($manualData);
+                        
+                        Log::info('Manual item created successfully', ['id' => $insertedId, 'nama' => $itemName]);
+
+                    } else {
+                        // Regular item - with stock reduction
+                        if (!isset($item['barang_id']) || empty($item['barang_id'])) {
+                            throw new \Exception("Barang ID tidak valid untuk item: {$itemName}");
+                        }
+
+                        $usedPembelians = $this->reduceStockFifo($item['barang_id'], $item['jumlah']);
+                        
+                        foreach ($usedPembelians as $used) {
+                            $regularData = [
+                                'transaksi_service_id' => $transaksiService->id,
+                                'barang_id' => $item['barang_id'],
+                                'pembelian_id' => $used['pembelian_id'],
+                                'nama_barang_manual' => null,
+                                'jumlah' => (int) $used['jumlah'],
+                                'satuan' => null,
+                                'harga_jual' => (float) $item['harga_jual'],
+                                'subtotal' => (float) ($used['jumlah'] * $item['harga_jual']),
+                                'is_manual' => false,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ];
+
+                            Log::info('Creating regular item', ['data' => $regularData]);
+
+                            $insertedId = DB::table('service_barang_items')->insertGetId($regularData);
+                            
+                            Log::info('Regular item created successfully', ['id' => $insertedId, 'nama' => $itemName]);
+                        }
+                    }
+
+                } catch (\Exception $e) {
+                    $itemName = isset($item['nama']) ? $item['nama'] : "Item ke-{$index}";
+                    Log::error('Error creating ServiceBarangItem', [
+                        'item_index' => $index,
+                        'item_name' => $itemName,
+                        'item' => $item,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
                     ]);
+                    throw new \Exception("Gagal menyimpan item barang: {$itemName} - {$e->getMessage()}");
                 }
             }
 
-            Log::info('ServiceBarangItems created', ['count' => count($this->itemsBarang)]);
+            Log::info('All ServiceBarangItems created successfully', ['count' => count($this->itemsBarang)]);
 
-            // 5. Create ServiceJasaItems
-            foreach ($this->itemsJasa as $jasa) {
-                ServiceJasaItem::create([
-                    'transaksi_service_id' => $transaksiService->id,
-                    'nama_jasa' => $jasa['nama_jasa'],
-                    'harga_jasa' => $jasa['harga_jasa'],
-                    'subtotal' => $jasa['subtotal'],
-                    'keterangan' => $jasa['keterangan'] ?? null,
-                ]);
+            // 4. Create ServiceJasaItems
+            foreach ($this->itemsJasa as $index => $jasa) {
+                try {
+                    if (!is_array($jasa) || !isset($jasa['nama_jasa'])) {
+                        throw new \Exception("Item jasa ke-{$index} tidak valid");
+                    }
+
+                    ServiceJasaItem::create([
+                        'transaksi_service_id' => $transaksiService->id,
+                        'nama_jasa' => $jasa['nama_jasa'],
+                        'harga_jasa' => $jasa['harga_jasa'],
+                        'subtotal' => $jasa['subtotal'],
+                        'keterangan' => $jasa['keterangan'] ?? null,
+                    ]);
+
+                    Log::info('ServiceJasaItem created', ['nama_jasa' => $jasa['nama_jasa']]);
+
+                } catch (\Exception $e) {
+                    $jasaName = isset($jasa['nama_jasa']) ? $jasa['nama_jasa'] : "Jasa ke-{$index}";
+                    Log::error('Error creating ServiceJasaItem', [
+                        'jasa_index' => $index,
+                        'jasa_name' => $jasaName,
+                        'jasa' => $jasa,
+                        'error' => $e->getMessage()
+                    ]);
+                    throw new \Exception("Gagal menyimpan item jasa: {$jasaName} - {$e->getMessage()}");
+                }
             }
 
-            Log::info('ServiceJasaItems created', ['count' => count($this->itemsJasa)]);
-
-            // 6. Create payment record if there's a payment
+            // 5. Create payment if needed
             if ($this->jumlah_dibayar_sekarang > 0) {
                 ServicePayment::create([
                     'transaksi_service_id' => $transaksiService->id,
@@ -642,13 +740,18 @@ class TransaksiServices extends Component
                     'keterangan' => $this->keterangan_pembayaran ?: 'Pembayaran awal',
                     'kasir' => $this->kasir,
                 ]);
+
+                Log::info('ServicePayment created', ['jumlah' => $this->jumlah_dibayar_sekarang]);
             }
 
-            // Commit transaction
             DB::commit();
 
-            // Success message with detailed status
-            $statusText = $this->getStatusText($statusPembayaran, $this->strategi_pembayaran, $this->status_pekerjaan, $sisaPembayaran);
+            $statusText = $this->getStatusText(
+                $this->getStatusPembayaranProperty(), 
+                $this->strategi_pembayaran, 
+                $this->status_pekerjaan, 
+                $this->getSisaPembayaranProperty()
+            );
 
             $successMessage = 'Transaksi service berhasil disimpan!' . 
                 ' | Invoice: ' . $transaksiService->invoice . 
@@ -656,67 +759,96 @@ class TransaksiServices extends Component
                 $statusText;
 
             session()->flash('message', $successMessage);
-
+            
             Log::info('Transaction saved successfully', [
                 'invoice' => $transaksiService->invoice,
                 'total' => $transaksiService->total_keseluruhan,
-                'status_pembayaran' => $statusPembayaran,
-                'status_pekerjaan' => $this->status_pekerjaan,
-                'strategi_pembayaran' => $this->strategi_pembayaran
             ]);
 
-            // Emit success event
-            $this->dispatch('transaction-saved', [
-                'invoice' => $transaksiService->invoice,
-                'total' => $transaksiService->total_keseluruhan,
-                'status_pembayaran' => $statusPembayaran,
-                'status_pekerjaan' => $this->status_pekerjaan,
-                'strategi_pembayaran' => $this->strategi_pembayaran
-            ]);
-
-            // Reset loading state
             $this->isSaving = false;
             $this->isLoading = false;
 
-            // Redirect to invoice page or transactions list
             return redirect()->route('service.invoice', ['id' => $transaksiService->id]);
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            DB::rollback();
-            $this->isSaving = false;
-            $this->isLoading = false;
-            
-            Log::error('Validation error in simpanTransaksi', ['errors' => $e->errors()]);
-            $this->dispatch('transaction-error', ['message' => 'Data tidak valid, periksa kembali form']);
-            throw $e;
-            
         } catch (\Exception $e) {
             DB::rollback();
             $this->isSaving = false;
             $this->isLoading = false;
             
-            $errorMessage = 'Terjadi kesalahan saat menyimpan transaksi: ' . $e->getMessage();
-            
-            Log::error('Error saving service transaction: ' . $e->getMessage(), [
+            Log::error('Error in simpanTransaksi: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
-                'user_id' => auth()->id(),
-                'data' => [
-                    'pelanggan' => $this->nama_pelanggan,
-                    'nopol' => $this->nopol,
-                    'total_barang' => count($this->itemsBarang),
-                    'total_jasa' => count($this->itemsJasa),
-                    'total_keseluruhan' => $this->getTotalKeseluruhanProperty(),
-                ]
+                'user_id' => Auth::id(),
+                'items_barang' => $this->itemsBarang,
+                'items_jasa' => $this->itemsJasa,
             ]);
             
-            $this->addError('general', $errorMessage);
-            $this->dispatch('transaction-error', ['message' => $errorMessage]);
-        } finally {
-            // Always reset saving state
-            $this->isSaving = false;
-            $this->isLoading = false;
+            $this->addError('general', 'Terjadi kesalahan saat menyimpan transaksi: ' . $e->getMessage());
         }
     }
+
+    // Perbaiki method tambahBarangManual untuk memastikan data lengkap
+    public function tambahBarangManual()
+    {
+        $this->validate([
+            'nama_barang_manual' => 'required|string|max:255',
+            'jumlah_manual' => 'required|integer|min:1',
+            'satuan_manual' => 'required|string|max:20',
+            'harga_jual_manual' => 'required|numeric|min:0',
+        ]);
+
+        try {
+            // Generate unique temporary ID untuk barang manual
+            $tempId = 'manual_' . uniqid() . '_' . time();
+            
+            // Cek apakah barang dengan nama yang sama sudah ada di items
+            $existingIndex = collect($this->itemsBarang)->search(function($item) {
+                return isset($item['is_manual']) && $item['is_manual'] && 
+                       strtolower($item['nama']) === strtolower($this->nama_barang_manual);
+            });
+
+            if ($existingIndex !== false) {
+                // Update existing manual item
+                $this->itemsBarang[$existingIndex]['jumlah'] += $this->jumlah_manual;
+                $this->itemsBarang[$existingIndex]['harga_jual'] = $this->harga_jual_manual;
+                $this->itemsBarang[$existingIndex]['subtotal'] = $this->itemsBarang[$existingIndex]['jumlah'] * $this->harga_jual_manual;
+                
+                session()->flash('success', 'Barang manual berhasil diperbarui!');
+            } else {
+                // Add new manual item
+                $this->itemsBarang[] = [
+                    'barang_id' => $tempId, // Temporary ID
+                    'nama' => $this->nama_barang_manual,
+                    'jumlah' => $this->jumlah_manual,
+                    'satuan' => $this->satuan_manual,
+                    'harga_jual' => $this->harga_jual_manual,
+                    'subtotal' => $this->jumlah_manual * $this->harga_jual_manual,
+                    'is_manual' => true, // Flag untuk identifikasi barang manual
+                    'stok_tersedia' => 'ORDER' // Menunjukkan bahwa ini adalah order
+                ];
+                
+                session()->flash('success', 'Barang manual berhasil ditambahkan untuk diorder!');
+            }
+
+            // Reset form inputs
+            $this->resetManualInputs();
+            
+            // Update payment amount
+            $this->updatePaymentAmount();
+            
+            // Emit event untuk UI
+            $this->dispatch('manual-item-added');
+            
+            // Hide manual input form
+            $this->dispatch('hide-manual-form');
+            
+        } catch (\Exception $e) {
+            Log::error('Error adding manual item: ' . $e->getMessage());
+            $this->addError('general', 'Terjadi kesalahan saat menambah barang manual.');
+        }
+    }
+
+    // Perbaiki method tambahItemBarang untuk memastikan data lengkap
+    
 
     private function getStatusText($statusPembayaran, $strategiPembayaran, $statusPekerjaan, $sisaPembayaran)
     {
@@ -743,7 +875,7 @@ class TransaksiServices extends Component
             case 'sebagian':
                 $statusText .= ' | Pembayaran: SEBAGIAN (Sisa: Rp' . number_format($sisaPembayaran, 0, ',', '.') . ')';
                 break;
-            case 'belum_bayar':
+            case 'belum':
                 switch ($strategiPembayaran) {
                     case 'bayar_akhir':
                         $statusText .= ' | Pembayaran: MENUNGGU SELESAI';
@@ -761,40 +893,47 @@ class TransaksiServices extends Component
         return $statusText;
     }
 
-    private function generateInvoice()
-    {
-        $prefix = 'FJS';
-        $month = strtoupper(now()->format('M')); // e.g., APR
-        $year = now()->format('Y');              // e.g., 2025
+private function generateInvoice(): string
+{
+    $prefix = 'FJS';
+    $month = strtoupper(now()->format('M'));
+    $year = now()->format('Y');
+    $dateSegment = "{$prefix}/{$month}/{$year}";
 
+    $maxRetries = 5;
+    
+    for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
         try {
-            // Ambil invoice terakhir di bulan dan tahun ini
-            $lastInvoice = TransaksiService::where('invoice', 'like', '%/' . $prefix . '/' . $month . '/' . $year)
-                ->orderBy('invoice', 'desc')
-                ->first();
+            return DB::transaction(function () use ($dateSegment, $prefix, $month, $year) {
+                // Gunakan LIKE dengan pattern yang lebih spesifik
+                $pattern = "___/{$prefix}/{$month}/{$year}";
+                
+                $result = DB::selectOne("
+                    SELECT COALESCE(MAX(CAST(SUBSTRING(invoice, 1, 3) AS UNSIGNED)), 0) as last_number
+                    FROM transaksi_services 
+                    WHERE invoice LIKE ? 
+                    AND LENGTH(invoice) = ?
+                    FOR UPDATE
+                ", [$pattern, strlen($pattern)]);
 
-            if ($lastInvoice) {
-                // Ambil 3 digit pertama sebagai nomor urut
-                $lastNumber = intval(substr($lastInvoice->invoice, 0, 3));
-                $newNumber = $lastNumber + 1;
-            } else {
-                $newNumber = 1; // Reset ke 001 jika bulan ini belum ada invoice
-            }
-
-            // Format ke 3 digit
-            $numberFormatted = str_pad($newNumber, 3, '0', STR_PAD_LEFT);
-
-            // Gabungkan hasil akhir
-            return "{$numberFormatted}/{$prefix}/{$month}/{$year}";
-
+                $newNumber = ($result->last_number ?? 0) + 1;
+                $numberFormatted = str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+                
+                return "{$numberFormatted}/{$dateSegment}";
+            });
         } catch (\Exception $e) {
-            Log::error('Gagal generate invoice: ' . $e->getMessage());
-
-            // Fallback: tetap buat invoice darurat
-            $fallbackNumber = str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
-            return "{$fallbackNumber}/{$prefix}/{$month}/{$year}";
+            if ($attempt >= $maxRetries) {
+                throw new \Exception("Gagal generate invoice setelah {$maxRetries} percobaan: " . $e->getMessage());
+            }
+            
+            // Random delay untuk mengurangi collision
+            usleep(rand(10000, 50000)); // 10-50ms
         }
     }
+    
+    // Fallback
+    throw new \Exception("Unexpected error in invoice generation");
+}
 
 
 

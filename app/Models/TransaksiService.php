@@ -54,6 +54,66 @@ class TransaksiService extends Model
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
+    
+    // Fixed relationship name
+    public function servicePayments()
+    {
+        return $this->hasMany(ServicePayment::class, 'transaksi_service_id');
+    }
+
+    // Accessor methods
+    public function getTotalItemsAttribute()
+    {
+        return $this->serviceBarangItems->count() + $this->serviceJasaItems->count();
+    }
+
+    public function getStatusPekerjaanLabelAttribute()
+    {
+        $labels = [
+            'belum_dikerjakan' => 'Belum Dikerjakan',
+            'sedang_dikerjakan' => 'Sedang Dikerjakan',
+            'selesai' => 'Selesai'
+        ];
+
+        return $labels[$this->status_pekerjaan] ?? $this->status_pekerjaan;
+    }
+
+    public function getStatusPembayaranLabelAttribute()
+    {
+        $labels = [
+            'belum' => 'Belum Bayar',
+            'sebagian' => 'Sebagian',
+            'lunas' => 'Lunas'
+        ];
+
+        return $labels[$this->status_pembayaran] ?? $this->status_pembayaran;
+    }
+
+    public function getIsFullyPaidAttribute()
+    {
+        return $this->sisa_pembayaran <= 0;
+    }
+
+    public function getIsPartiallyPaidAttribute()
+    {
+        return $this->total_sudah_dibayar > 0 && $this->sisa_pembayaran > 0;
+    }
+
+    public function scopeByPaymentStatus($query, $status)
+    {
+        return $query->where('status_pembayaran', $status);
+    }
+
+    public function scopeSearch($query, $search)
+    {
+        return $query->where(function($q) use ($search) {
+            $q->where('invoice', 'like', "%{$search}%")
+              ->orWhereHas('pelangganMobil', function($subQ) use ($search) {
+                  $subQ->where('nama_pelanggan', 'like', "%{$search}%")
+                       ->orWhere('nopol', 'like', "%{$search}%");
+              });
+        });
+    }
 
     // Relationships
     public function pelangganMobil()
@@ -306,7 +366,7 @@ class TransaksiService extends Model
         } elseif ($this->total_sudah_dibayar > 0) {
             $this->status_pembayaran = 'sebagian';
         } else {
-            $this->status_pembayaran = 'belum_bayar';
+            $this->status_pembayaran = 'belum';
         }
 
         $this->save();
@@ -395,7 +455,7 @@ class TransaksiService extends Model
                 } elseif ($transaksi->total_sudah_dibayar > 0 && $transaksi->sisa_pembayaran > 0) {
                     $transaksi->status_pembayaran = 'sebagian';
                 } elseif ($transaksi->total_sudah_dibayar <= 0) {
-                    $transaksi->status_pembayaran = 'belum_bayar';
+                    $transaksi->status_pembayaran = 'belum';
                 }
             }
         });

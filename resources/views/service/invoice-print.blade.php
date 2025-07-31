@@ -453,9 +453,14 @@
                             <tr>
                                 <td class="text-center">{{ $index + 1 }}</td>
                                 <td>
-                                    <div class="item-name">{{ $item->barang->nama }}</div>
-                                    @if($item->barang->merk || $item->barang->tipe)
-                                        <div class="item-detail">{{ $item->barang->merk }} {{ $item->barang->tipe }}</div>
+                                    @if($item->is_manual)
+                                        {{ $item->nama_barang_manual }}
+                                        
+                                    @else
+                                        {{ $item->barang ? $item->barang->nama : 'Barang tidak ditemukan' }}
+                                        @if($item->barang && ($item->barang->merk || $item->barang->tipe))
+                                            <div class="text-xs text-gray-500">{{ $item->barang->merk }} {{ $item->barang->tipe }}</div>
+                                        @endif
                                     @endif
                                 </td>
                                 <td class="text-center">{{ $item->jumlah }}</td>

@@ -7,6 +7,7 @@ use App\Http\Controllers\ProfileController;
 use App\Livewire\BarangIndex;
 use App\Livewire\PembelianIndex;
 use App\Livewire\PenjualanCreate;
+use App\Livewire\RiwayatService;
 use App\Livewire\RiwayatTransaksi;
 use App\Livewire\RiwayatTransaksiBarang;
 use App\Livewire\TransaksiBarang;
@@ -32,6 +33,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/transaksi-barang', TransaksiBarang::class)->name('transaksi.barang');
         Route::get('/transaksi-service', TransaksiServices::class)->name('transaksi.services');  
         Route::get('/riwayat-transaksi-barang', RiwayatTransaksiBarang::class)->name('riwayat.transaksi.barang');
+        Route::get('/riwayat-service', RiwayatService::class)->name('riwayat.service');
 
         // // Opsional: daftar riwayat penjualan
         // Route::get('/penjualan', PenjualanIndex::class)->name('penjualan.index');
