@@ -156,22 +156,6 @@
                             </div>
                         </div>
 
-                        <!-- Payment Strategy -->
-                        <div class="bg-gray-50 p-4 rounded-xl">
-                            <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide block mb-2">Strategi Pembayaran</label>
-                            <div class="flex items-center space-x-2">
-                                @php
-                                    $strategyText = match($transaksi->strategi_pembayaran) {
-                                        'bayar_akhir' => 'BAYAR AKHIR',
-                                        'bayar_dimuka' => 'BAYAR DIMUKA',
-                                        'cicilan' => 'CICILAN',
-                                        default => strtoupper($transaksi->strategi_pembayaran)
-                                    };
-                                @endphp
-                                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold">{{ $strategyText }}</span>
-                            </div>
-                        </div>
-
                         <!-- Payment Status -->
                         <div class="bg-gray-50 p-4 rounded-xl">
                             <label class="text-xs font-semibold text-gray-600 uppercase tracking-wide block mb-2">Status Pembayaran</label>
@@ -372,59 +356,10 @@
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Payment History Section -->
-                @if($transaksi->servicePayments && $transaksi->servicePayments->count() > 0)
-                    <div class="mt-8 pt-6 border-t border-gray-200">
-                        <h3 class="text-base sm:text-lg font-bold text-gray-800 mb-4 flex items-center">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-                            </svg>
-                            Riwayat Pembayaran
-                        </h3>
-                        <div class="overflow-x-auto">
-                            <table class="w-full border-collapse">
-                                <thead>
-                                    <tr class="bg-gray-50 border-b border-gray-200">
-                                        <th class="text-left p-3 font-semibold text-gray-700 text-sm">No</th>
-                                        <th class="text-left p-3 font-semibold text-gray-700 text-sm">Tanggal</th>
-                                        <th class="text-left p-3 font-semibold text-gray-700 text-sm">Metode</th>
-                                        <th class="text-right p-3 font-semibold text-gray-700 text-sm">Jumlah</th>
-                                        <th class="text-left p-3 font-semibold text-gray-700 text-sm">Kasir</th>
-                                        <th class="text-left p-3 font-semibold text-gray-700 text-sm">Keterangan</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($transaksi->servicePayments as $index => $payment)
-                                        <tr class="border-b border-gray-100">
-                                            <td class="p-3 text-sm text-gray-600">{{ $index + 1 }}</td>
-                                            <td class="p-3 text-sm">{{ \Carbon\Carbon::parse($payment->tanggal_bayar)->format('d/m/Y') }}</td>
-                                            <td class="p-3 text-sm capitalize">
-                                                <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">{{ $payment->metode_pembayaran }}</span>
-                                            </td>
-                                            <td class="p-3 text-sm font-bold text-green-600 text-right">
-                                                Rp{{ number_format($payment->jumlah_bayar, 0, ',', '.') }}
-                                            </td>
-                                            <td class="p-3 text-sm">{{ $payment->kasir }}</td>
-                                            <td class="p-3 text-sm text-gray-600">{{ $payment->keterangan ?: '-' }}</td>
-                                        </tr>
-                                    @endforeach
-                                    <tr class="bg-gray-50 font-bold">
-                                        <td colspan="3" class="p-3 text-sm text-right">Total Dibayar:</td>
-                                        <td class="p-3 text-sm text-green-600 text-right">
-                                            Rp{{ number_format($transaksi->servicePayments->sum('jumlah_bayar'), 0, ',', '.') }}
-                                        </td>
-                                        <td colspan="2" class="p-3"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                @endif
+                </div>  
 
                 <!-- Footer -->
-                <div class="mt-8 pt-6 border-t border-gray-200 text-center text-gray-500 text-sm sm:text-base">
+                <div class="mt-8 mb-8 pt-6 border-t border-gray-200 text-center text-gray-500 text-sm sm:text-base">
                     <div class="mb-2"><strong>Kasir:</strong> {{ $transaksi->kasir }}</div>
                     <div class="text-xs sm:text-sm">
                         Terima kasih atas kepercayaan Anda menggunakan jasa kami.

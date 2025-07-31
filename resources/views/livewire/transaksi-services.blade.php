@@ -453,27 +453,6 @@
             </div>
         </div>
 
-        <!-- Transaction Summary -->
-        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Ringkasan Transaksi</h3>
-            <div class="grid grid-cols-3 gap-6">
-                <div class="text-center">
-                    <div class="text-2xl font-bold text-blue-600">Rp{{ number_format($this->total_barang, 0, ',', '.') }}</div>
-                    <div class="text-sm text-gray-500">Total Barang</div>
-                    <div class="text-xs text-gray-400">{{ count($itemsBarang) }} item</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-2xl font-bold text-purple-600">Rp{{ number_format($this->total_jasa, 0, ',', '.') }}</div>
-                    <div class="text-sm text-gray-500">Total Jasa</div>
-                    <div class="text-xs text-gray-400">{{ count($itemsJasa) }} jasa</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-3xl font-bold text-green-600">Rp{{ number_format($this->total_keseluruhan, 0, ',', '.') }}</div>
-                    <div class="text-sm text-gray-500">Total Keseluruhan</div>
-                </div>
-            </div>
-        </div>
-
         <div class="grid grid-cols-2 gap-6">
             <!-- Status Pekerjaan -->
             <div class="bg-white rounded-2xl p-6 border border-gray-200">
@@ -624,68 +603,6 @@
             $totalDibayar = $total_sudah_dibayar + $jumlah_dibayar_sekarang;
         @endphp
         
-        <div class="bg-gradient-to-r 
-            {{ $statusPembayaran == 'lunas' ? 'from-green-50 to-emerald-50 border-green-200' : 
-            ($statusPembayaran == 'sebagian' ? 'from-yellow-50 to-orange-50 border-yellow-200' : 'from-gray-50 to-slate-50 border-gray-200') }} 
-            border rounded-2xl p-6">
-            
-            <h4 class="font-bold text-xl mb-4
-                {{ $statusPembayaran == 'lunas' ? 'text-green-800' : 
-                ($statusPembayaran == 'sebagian' ? 'text-orange-800' : 'text-gray-800') }}">
-                
-                @if($statusPembayaran == 'lunas')
-                    ✅ LUNAS
-                @elseif($statusPembayaran == 'sebagian')
-                    ⚠️ CICILAN
-                @else
-                    📋 BELUM BAYAR
-                @endif
-            </h4>
-            
-            <div class="space-y-3">
-                <div class="flex justify-between items-center">
-                    <span class="text-gray-700 font-medium">Total Tagihan:</span>
-                    <span class="text-xl font-bold text-gray-900">Rp{{ number_format($this->total_keseluruhan, 0, ',', '.') }}</span>
-                </div>
-                
-                <div class="flex justify-between items-center">
-                    <span class="text-gray-700 font-medium">Bayar Sekarang:</span>
-                    <span class="text-lg font-semibold text-blue-600">Rp{{ number_format($jumlah_dibayar_sekarang, 0, ',', '.') }}</span>
-                </div>
-                
-                <div class="flex justify-between items-center pt-3 border-t border-gray-200">
-                    <span class="text-gray-700 font-medium">
-                        @if($statusPembayaran == 'lunas')
-                            Status:
-                        @else
-                            Sisa Tagihan:
-                        @endif
-                    </span>
-                    <span class="text-2xl font-bold 
-                        {{ $statusPembayaran == 'lunas' ? 'text-green-600' : 'text-orange-600' }}">
-                        @if($statusPembayaran == 'lunas')
-                            LUNAS
-                        @else
-                            Rp{{ number_format($sisaPembayaran, 0, ',', '.') }}
-                        @endif
-                    </span>
-                </div>
-                
-                @if($statusPembayaran != 'lunas' && $jatuh_tempo)
-                    <div class="text-center mt-4 p-3 bg-white/50 rounded-lg">
-                        <span class="text-sm text-gray-600">Jatuh Tempo: </span>
-                        <span class="font-semibold text-orange-700">{{ \Carbon\Carbon::parse($jatuh_tempo)->format('d F Y') }}</span>
-                    </div>
-                @endif
-
-                <!-- Simple Status Info -->
-                <div class="mt-4 p-3 bg-blue-50 rounded-lg">
-                    <div class="text-sm text-blue-700 text-center">
-                        💡 <strong>Pembayaran Fleksibel:</strong> Bisa bayar berapa saja, kapan saja
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 @endif
 
@@ -739,17 +656,20 @@
             <div class="col-span-4">
                 <div class="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-white/30 p-6 sticky top-6">
                     <!-- Summary Header -->
-                    <div class="flex items-center justify-between mb-6">
-                        <div>
-                            <h3 class="text-xl font-bold text-gray-900">Ringkasan</h3>
-                            <p class="text-gray-500">Kasir: {{ $kasir }}</p>
-                        </div>
-                        <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl flex items-center justify-center">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                            </svg>
-                        </div>
-                    </div>
+                    <div class="bg-gradient-to-r from-blue-50 mb-10 to-indigo-50 rounded-2xl px-6 py-3 border border-blue-100">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-500 font-medium">Kasir</p>
+                                        <input wire:model="kasir" type="text" readonly 
+                                               class="bg-transparent font-semibold text-gray-900 border-none p-0 text-base focus:ring-0 w-28" />
+                                    </div>
+                                </div>
+                            </div>
 
                     <!-- Enhanced Status Display -->
                     @if($currentStep == 4)
@@ -769,31 +689,6 @@
                                         {{ $status_pekerjaan == 'selesai' ? 'text-green-600' : 
                                            ($status_pekerjaan == 'sedang_dikerjakan' ? 'text-blue-600' : 'text-orange-600') }}">
                                         {{ strtoupper(str_replace('_', ' ', $status_pekerjaan)) }}
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Payment Strategy -->
-                            <div class="bg-gradient-to-r 
-                                {{ $strategi_pembayaran == 'bayar_akhir' ? 'from-green-100 to-teal-100' : 
-                                   ($strategi_pembayaran == 'bayar_dimuka' ? 'from-blue-100 to-purple-100' : 'from-purple-100 to-pink-100') }} 
-                                rounded-xl p-3 border">
-                                <div class="text-center">
-                                    <div class="text-sm font-semibold 
-                                        {{ $strategi_pembayaran == 'bayar_akhir' ? 'text-green-800' : 
-                                           ($strategi_pembayaran == 'bayar_dimuka' ? 'text-blue-800' : 'text-purple-800') }}">
-                                        💰 STRATEGI PEMBAYARAN
-                                    </div>
-                                    <div class="text-lg font-bold 
-                                        {{ $strategi_pembayaran == 'bayar_akhir' ? 'text-green-600' : 
-                                           ($strategi_pembayaran == 'bayar_dimuka' ? 'text-blue-600' : 'text-purple-600') }}">
-                                        @if($strategi_pembayaran == 'bayar_akhir')
-                                            BAYAR AKHIR
-                                        @elseif($strategi_pembayaran == 'bayar_dimuka')
-                                            BAYAR DIMUKA
-                                        @else
-                                            CICILAN
-                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -901,7 +796,7 @@
                                         @if($sisaPembayaran <= 0)
                                             Status:
                                         @else
-                                            Sisa:
+                                            Sisa Pembayaran :
                                         @endif
                                     </span>
                                     <span>

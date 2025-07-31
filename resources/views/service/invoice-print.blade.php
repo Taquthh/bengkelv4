@@ -554,19 +554,6 @@
                         <span style="text-transform: capitalize;"><strong>{{ $transaksi->metode_pembayaran }}</strong></span>
                     </div>
                     <div class="payment-row">
-                        <span>Strategi Pembayaran:</span>
-                        <span style="text-transform: capitalize;"><strong>
-                            @php
-                                echo match($transaksi->strategi_pembayaran) {
-                                    'bayar_akhir' => 'Bayar Akhir',
-                                    'bayar_dimuka' => 'Bayar Dimuka',
-                                    'cicilan' => 'Cicilan',
-                                    default => $transaksi->strategi_pembayaran
-                                };
-                            @endphp
-                        </strong></span>
-                    </div>
-                    <div class="payment-row">
                         <span>Status Pembayaran:</span>
                         <span class="status-{{ $transaksi->status_pembayaran }}" style="text-transform: uppercase; font-weight: bold;">
                             {{ $transaksi->status_pembayaran }}
