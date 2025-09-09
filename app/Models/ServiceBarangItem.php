@@ -18,22 +18,22 @@ class ServiceBarangItem extends Model
     protected $fillable = [
         'transaksi_service_id',
         'barang_id',
-        'pembelian_id', 
+        'pembelian_id',
         'nama_barang_manual',
         'jumlah',
         'satuan',
         'harga_jual',
+        'harga_beli_manual',
         'subtotal',
-        'is_manual',
-        'keterangan',
+        'is_manual'
     ];
-    
 
     protected $casts = [
-        'is_manual' => 'boolean',
-        'harga_jual' => 'decimal:2',
-        'subtotal' => 'decimal:2',
         'jumlah' => 'integer',
+        'harga_jual' => 'decimal:2',
+        'harga_beli_manual' => 'decimal:2',
+        'subtotal' => 'decimal:2',
+        'is_manual' => 'boolean'
     ];
 
     // Get display name (either from barang or manual name)
@@ -288,15 +288,23 @@ class ServiceBarangItem extends Model
             }
         });
 
-
         static::created(function ($item) {
             // Reduce stock from pembelian
             if ($item->pembelian) {
                 $item->pembelian->decrement('jumlah_tersisa', $item->jumlah);
             }
 
-            // Update transaksi totals
-            $item->transaksiService->hitungTotal();
+            // Only recalculate total if no discount is applied
+            $transaksi = $item->transaksiService;
+            if ($transaksi && (!$transaksi->diskon || $transaksi->diskon == 0)) {
+                $transaksi->hitungTotal();
+            } else {
+                \Log::info('[v0] Skipping hitungTotal because discount is applied', [
+                    'transaksi_id' => $transaksi->id,
+                    'diskon' => $transaksi->diskon,
+                    'tipe_diskon' => $transaksi->tipe_diskon
+                ]);
+            }
         });
 
         static::updating(function ($item) {
@@ -312,8 +320,17 @@ class ServiceBarangItem extends Model
         });
 
         static::updated(function ($item) {
-            // Update transaksi totals when item is updated
-            $item->transaksiService->hitungTotal();
+            // Only recalculate total if no discount is applied
+            $transaksi = $item->transaksiService;
+            if ($transaksi && (!$transaksi->diskon || $transaksi->diskon == 0)) {
+                $transaksi->hitungTotal();
+            } else {
+                // \Log::info('[v0] Skipping hitungTotal on update because discount is applied', [
+                //     'transaksi_id' => $transaksi->id,
+                //     'diskon' => $transaksi->diskon,
+                //     'tipe_diskon' => $transaksi->tipe_diskon
+                // ]);
+            }
         });
 
         static::deleting(function ($item) {
@@ -324,9 +341,16 @@ class ServiceBarangItem extends Model
         });
 
         static::deleted(function ($item) {
-            // Update transaksi totals when item is deleted
-            if ($item->transaksiService) {
-                $item->transaksiService->hitungTotal();
+            // Only recalculate total if no discount is applied
+            $transaksi = $item->transaksiService;
+            if ($transaksi && (!$transaksi->diskon || $transaksi->diskon == 0)) {
+                $transaksi->hitungTotal();
+            } else {
+                // \Log::info('[v0] Skipping hitungTotal on delete because discount is applied', [
+                //     'transaksi_id' => $transaksi ? $transaksi->id : 'null',
+                //     'diskon' => $transaksi ? $transaksi->diskon : 'null',
+                //     'tipe_diskon' => $transaksi ? $transaksi->tipe_diskon : 'null'
+                // ]);
             }
         });
     }

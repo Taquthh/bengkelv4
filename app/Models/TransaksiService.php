@@ -28,32 +28,30 @@ class TransaksiService extends Model
         'status_pembayaran',
         'total_barang',
         'total_jasa',
+        'subtotal_sebelum_diskon',
         'total_keseluruhan',
         'total_sudah_dibayar',
         'sisa_pembayaran',
         'jatuh_tempo',
         'no_surat_pesanan',
-        'keterangan_piutang',
         'keterangan_pembayaran',
-        'status_service',
-        'waktu_selesai',
-        'waktu_diambil',
+        'diskon',
+        'tipe_diskon',
     ];
+
 
     protected $casts = [
         'tanggal_service' => 'date',
         'jatuh_tempo' => 'date',
-        'waktu_selesai' => 'datetime',
-        'waktu_diambil' => 'datetime',
         'total_barang' => 'decimal:2',
         'total_jasa' => 'decimal:2',
+        'subtotal_sebelum_diskon' => 'decimal:2',
         'total_keseluruhan' => 'decimal:2',
         'total_sudah_dibayar' => 'decimal:2',
         'sisa_pembayaran' => 'decimal:2',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'diskon' => 'decimal:2',
     ];
+
     
     // Fixed relationship name
     public function servicePayments()

@@ -186,53 +186,103 @@ class ServiceJasaItem extends Model
             ->get();
     }
 
-    // Boot method
     protected static function boot()
     {
         parent::boot();
-
-        static::creating(function ($item) {
-            // Validate required fields
-            if (!$item->transaksi_service_id) {
-                throw new \Exception('transaksi_service_id wajib diisi');
-            }
-
-            if (!$item->nama_jasa) {
-                throw new \Exception('nama_jasa wajib diisi');
-            }
-
-            if ($item->harga_jasa < 0) {
-                throw new \Exception('harga_jasa tidak boleh negatif');
-            }
-
-            // Auto calculate subtotal if not provided
-            if (is_null($item->subtotal) && $item->harga_jasa) {
-                $item->subtotal = $item->harga_jasa;
-            }
-        });
-
-        static::created(function ($item) {
-            // Update transaksi totals
-            $item->transaksiService->hitungTotal();
-        });
-
-        static::updating(function ($item) {
-            // Auto recalculate subtotal when harga_jasa changes
-            if ($item->isDirty(['harga_jasa'])) {
-                $item->subtotal = $item->harga_jasa;
-            }
-        });
-
-        static::updated(function ($item) {
-            // Update transaksi totals when item is updated
-            $item->transaksiService->hitungTotal();
-        });
-
-        static::deleted(function ($item) {
-            // Update transaksi totals when item is deleted
-            if ($item->transaksiService) {
-                $item->transaksiService->hitungTotal();
+        
+        static::created(function ($serviceJasaItem) {
+            // Log::info('ServiceJasaItem created - checking if total gets modified', [
+            //     'item_id' => $serviceJasaItem->id,
+            //     'transaksi_id' => $serviceJasaItem->transaksi_service_id,
+            //     'harga_jasa' => $serviceJasaItem->harga_jasa
+            // ]);
+            
+            // Get the TransaksiService and preserve its discount-calculated total
+            $transaksi = $serviceJasaItem->transaksiService;
+            if ($transaksi && $transaksi->diskon > 0) {
+                $originalTotal = $transaksi->total_keseluruhan;
+                
+                // \Log::info('Preserving discounted total after ServiceJasaItem creation', [
+                //     'transaksi_id' => $transaksi->id,
+                //     'current_total' => $originalTotal,
+                //     'diskon' => $transaksi->diskon,
+                //     'tipe_diskon' => $transaksi->tipe_diskon
+                // ]);
+                
+                // Recalculate the correct total with discount
+                $totalBarang = $transaksi->total_barang ?? 0;
+                $totalJasa = $transaksi->total_jasa ?? 0;
+                $subtotal = $totalBarang + $totalJasa;
+                
+                if ($transaksi->tipe_diskon === 'persentase') {
+                    $jumlahDiskon = ($subtotal * $transaksi->diskon) / 100;
+                } else {
+                    $jumlahDiskon = $transaksi->diskon;
+                }
+                
+                $correctTotal = $subtotal - $jumlahDiskon;
+                
+                // Only update if the total was changed by something else
+                if ($transaksi->total_keseluruhan != $correctTotal) {
+                    // \Log::warning('Total was modified after ServiceJasaItem creation - restoring correct total', [
+                    //     'wrong_total' => $transaksi->total_keseluruhan,
+                    //     'correct_total' => $correctTotal,
+                    //     'difference' => $transaksi->total_keseluruhan - $correctTotal
+                    // ]);
+                    
+                    $transaksi->update(['total_keseluruhan' => $correctTotal]);
+                }
             }
         });
     }
+
+    // Boot method
+    // protected static function boot()
+    // {
+    //     parent::boot();
+
+    //     static::creating(function ($item) {
+    //         // Validate required fields
+    //         if (!$item->transaksi_service_id) {
+    //             throw new \Exception('transaksi_service_id wajib diisi');
+    //         }
+
+    //         if (!$item->nama_jasa) {
+    //             throw new \Exception('nama_jasa wajib diisi');
+    //         }
+
+    //         if ($item->harga_jasa < 0) {
+    //             throw new \Exception('harga_jasa tidak boleh negatif');
+    //         }
+
+    //         // Auto calculate subtotal if not provided
+    //         if (is_null($item->subtotal) && $item->harga_jasa) {
+    //             $item->subtotal = $item->harga_jasa;
+    //         }
+    //     });
+
+    //     static::created(function ($item) {
+    //         // Update transaksi totals
+    //         $item->transaksiService->hitungTotal();
+    //     });
+
+    //     static::updating(function ($item) {
+    //         // Auto recalculate subtotal when harga_jasa changes
+    //         if ($item->isDirty(['harga_jasa'])) {
+    //             $item->subtotal = $item->harga_jasa;
+    //         }
+    //     });
+
+    //     static::updated(function ($item) {
+    //         // Update transaksi totals when item is updated
+    //         $item->transaksiService->hitungTotal();
+    //     });
+
+    //     static::deleted(function ($item) {
+    //         // Update transaksi totals when item is deleted
+    //         if ($item->transaksiService) {
+    //             $item->transaksiService->hitungTotal();
+    //         }
+    //     });
+    // }
 }

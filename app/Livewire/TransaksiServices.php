@@ -53,11 +53,16 @@ class TransaksiServices extends Component
     public $satuan_manual = 'pcs';
     public $harga_jual_manual = 0;
     
+    public $harga_beli_manual = 0;
+    
     // Data Jasa
     public $itemsJasa = [];
     public $nama_jasa = '';
     public $harga_jasa = 0;
     public $keterangan_jasa = '';
+    
+    public $diskon = 0;
+    public $tipe_diskon = 'nominal'; // nominal atau persentase
     
     // Enhanced Payment System
     public $metode_pembayaran = 'tunai';
@@ -89,12 +94,15 @@ class TransaksiServices extends Component
         'metode_pembayaran' => 'required|in:tunai,transfer',
         'jumlah_dibayar_sekarang' => 'required|numeric|min:0',
         'status_pekerjaan' => 'required|in:belum_dikerjakan,sedang_dikerjakan,selesai',
+        'diskon' => 'required|numeric|min:0',
+        'tipe_diskon' => 'required|in:nominal,persentase',
 
         // Rules untuk barang manual
         'nama_barang_manual' => 'required|string|max:255',
         'jumlah_manual' => 'required|integer|min:1',
         'satuan_manual' => 'required|string|max:20',
         'harga_jual_manual' => 'required|numeric|min:0',
+        'harga_beli_manual' => 'required|numeric|min:0',
     ];
 
     protected $messages = [
@@ -114,6 +122,8 @@ class TransaksiServices extends Component
         'satuan_manual.required' => 'Satuan wajib dipilih.',
         'harga_jual_manual.required' => 'Harga jual wajib diisi.',
         'harga_jual_manual.min' => 'Harga jual tidak boleh negatif.',
+        'harga_beli_manual.required' => 'Harga beli wajib diisi.',
+        'harga_beli_manual.min' => 'Harga beli tidak boleh negatif.',
     ];
 
     public function mount()
@@ -197,16 +207,67 @@ class TransaksiServices extends Component
         logger("Jenis pelanggan berubah ke: " . $this->jenis_pelanggan);
     }
 
-    
-
     // Method untuk reset form barang manual
     public function resetManualInputs()
     {
+        Log::info('resetManualInputs called - Before reset', [
+            'nama' => $this->nama_barang_manual,
+            'jumlah' => $this->jumlah_manual,
+            'satuan' => $this->satuan_manual
+        ]);
+        
+        // Method 1: Reset menggunakan reset() method
+        $this->reset([
+            'nama_barang_manual',
+            'jumlah_manual', 
+            'satuan_manual',
+            'harga_jual_manual',
+            'harga_beli_manual',
+        ]);
+        
+        // Set default values setelah reset
+        $this->jumlah_manual = 1;
+        $this->satuan_manual = 'pcs';
+        $this->harga_jual_manual = 0;
+        $this->harga_beli_manual = 0;
+        $this->nama_barang_manual = '';
+        
+        // Clear validation errors
+        $this->resetValidation([
+            'nama_barang_manual', 
+            'jumlah_manual', 
+            'satuan_manual', 
+            'harga_jual_manual', 
+            'harga_beli_manual', 
+        ]);
+        
+        Log::info('resetManualInputs completed - After reset', [
+            'nama' => $this->nama_barang_manual,
+            'jumlah' => $this->jumlah_manual,
+            'satuan' => $this->satuan_manual
+        ]);
+        
+        // Emit event untuk JavaScript
+        $this->dispatch('manual-form-reset');
+    }
+
+    // Method alternatif untuk force reset
+    public function forceResetManualInputs()
+    {
+        // Hard reset semua property
         $this->nama_barang_manual = '';
         $this->jumlah_manual = 1;
         $this->satuan_manual = 'pcs';
         $this->harga_jual_manual = 0;
-        $this->resetErrorBag(['nama_barang_manual', 'jumlah_manual', 'satuan_manual', 'harga_jual_manual', 'catatan_manual']);
+        $this->harga_beli_manual = 0;
+        
+        // Clear all errors
+        $this->resetErrorBag();
+        
+        // Force re-render
+        $this->dispatch('manual-form-reset');
+        
+        Log::info('Force reset manual inputs completed');
     }
 
     public function selectBarang($barangId)
@@ -294,7 +355,6 @@ class TransaksiServices extends Component
         $this->selectedBarangInfo = Barang::find($value)?->toArray();
     }
 
-
     public function hapusItemBarang($index)
     {
         if (isset($this->itemsBarang[$index])) {
@@ -331,7 +391,57 @@ class TransaksiServices extends Component
         }
     }
 
-    // Fixed payment amount calculation
+    public function updatedDiskon($value)
+    {
+        Log::info('Discount updated', [
+            'old_diskon' => $this->diskon,
+            'new_diskon' => $value,
+            'tipe_diskon' => $this->tipe_diskon
+        ]);
+
+        $totalSebelumDiskon = $this->getTotalBarangProperty() + $this->getTotalJasaProperty();
+        
+        if ($this->tipe_diskon == 'persentase') {
+            // Persentase tidak boleh lebih dari 100%
+            if ($value > 100) {
+                $this->diskon = 100;
+            }
+            if ($value < 0) {
+                $this->diskon = 0;
+            }
+        } else {
+            // Nominal tidak boleh lebih dari total sebelum diskon
+            if ($value > $totalSebelumDiskon) {
+                $this->diskon = $totalSebelumDiskon;
+            }
+            if ($value < 0) {
+                $this->diskon = 0;
+            }
+        }
+        
+        Log::info('Discount after validation', [
+            'final_diskon' => $this->diskon,
+            'tipe_diskon' => $this->tipe_diskon,
+            'total_sebelum_diskon' => $totalSebelumDiskon
+        ]);
+
+        // Update payment amount when discount changes
+        $this->updatePaymentAmount();
+    }
+
+    public function updatedTipeDiskon($value)
+    {
+        Log::info('Discount type updated', [
+            'old_tipe' => $this->tipe_diskon,
+            'new_tipe' => $value,
+            'current_diskon' => $this->diskon
+        ]);
+
+        // Reset diskon when changing type
+        $this->diskon = 0;
+        $this->updatePaymentAmount();
+    }
+
     public function updatePaymentAmount()
     {
         // Sistem cicilan fleksibel - tidak ada pembatasan
@@ -345,52 +455,6 @@ class TransaksiServices extends Component
         if ($this->jumlah_dibayar_sekarang < 0) {
             $this->jumlah_dibayar_sekarang = 0;
         }
-    }
-
-    // Method ini bisa dihapus atau disederhanakan:
-    public function updatedStrategiPembayaran($value)
-    {
-        // Tidak perlu lagi karena selalu cicilan
-        $this->updatePaymentAmount();
-    }
-
-    public function updatedStatusPekerjaan($value)
-    {
-        $this->updatePaymentAmount();
-    }
-
-    // Fixed payment amount validation
-    public function updatedJumlahDibayarSekarang($value)
-    {
-        $total = $this->getTotalKeseluruhanProperty();
-        
-        // Ensure payment doesn't exceed total
-        if ($value > $total) {
-            $this->jumlah_dibayar_sekarang = $total;
-        }
-        
-        // Ensure payment is not negative
-        if ($value < 0) {
-            $this->jumlah_dibayar_sekarang = 0;
-        }
-    }
-
-    public function resetFormInputs()
-    {
-        $this->selectedBarangInfo = null;
-        $this->barang_id = '';
-        $this->jumlah = 1;
-        $this->harga_jual = 0;
-        $this->resetErrorBag(['jumlah', 'harga_jual']);
-        $this->dispatch('form-reset');
-    }
-
-    public function resetJasaInputs()
-    {
-        $this->nama_jasa = '';
-        $this->harga_jasa = 0;
-        $this->keterangan_jasa = '';
-        $this->resetErrorBag(['nama_jasa', 'harga_jasa']);
     }
 
     public function nextStep()
@@ -434,6 +498,41 @@ class TransaksiServices extends Component
 
     public function getTotalKeseluruhanProperty()
     {
+        $totalSebelumDiskon = $this->getTotalBarangProperty() + $this->getTotalJasaProperty();
+        
+        if ($this->diskon <= 0) {
+            return $totalSebelumDiskon;
+        }
+        
+        if ($this->tipe_diskon == 'persentase') {
+            // Perhitungan diskon persentase: total * (1 - diskon/100)
+            $totalSetelahDiskon = $totalSebelumDiskon * (1 - $this->diskon / 100);
+        } else {
+            // Perhitungan diskon nominal: total - diskon
+            $totalSetelahDiskon = $totalSebelumDiskon - $this->diskon;
+        }
+        
+        // Pastikan total tidak negatif
+        return max(0, $totalSetelahDiskon);
+    }
+
+    public function getJumlahDiskonProperty()
+    {
+        $totalSebelumDiskon = $this->getTotalBarangProperty() + $this->getTotalJasaProperty();
+        
+        if ($this->diskon <= 0) {
+            return 0;
+        }
+        
+        if ($this->tipe_diskon == 'persentase') {
+            return $totalSebelumDiskon * ($this->diskon / 100);
+        } else {
+            return min($this->diskon, $totalSebelumDiskon);
+        }
+    }
+
+    public function getSubtotalSebelumDiskonProperty()
+    {
         return $this->getTotalBarangProperty() + $this->getTotalJasaProperty();
     }
 
@@ -464,13 +563,27 @@ class TransaksiServices extends Component
         return max(0, $total - $totalDibayar);
     }
 
-    // Fixed payment validation logic
-    public function canMakePayment()
+    public function setDiskonPersentase($persen)
     {
-        return true; // Selalu bisa bayar karena sistem cicilan fleksibel
+        $this->tipe_diskon = 'persentase';
+        $this->diskon = $persen;
+        $this->updatePaymentAmount();
     }
 
-public function simpanTransaksi()
+    public function setDiskonNominal($nominal)
+    {
+        $this->tipe_diskon = 'nominal';
+        $this->diskon = $nominal;
+        $this->updatePaymentAmount();
+    }
+
+    public function hapusDiskon()
+    {
+        $this->diskon = 0;
+        $this->updatePaymentAmount();
+    }
+
+    public function simpanTransaksi()
     {
         if ($this->isSaving) {
             return;
@@ -483,7 +596,13 @@ public function simpanTransaksi()
             $this->resetErrorBag();
             $this->dispatch('transaction-saving');
 
-            Log::info('Starting simpanTransaksi', [
+            Log::info('Starting simpanTransaksi with discount info', [
+                'diskon' => $this->diskon,
+                'tipe_diskon' => $this->tipe_diskon,
+                'total_barang' => $this->getTotalBarangProperty(),
+                'total_jasa' => $this->getTotalJasaProperty(),
+                'total_keseluruhan' => $this->getTotalKeseluruhanProperty(),
+                'jumlah_diskon' => $this->getJumlahDiskonProperty(),
                 'items_barang' => $this->itemsBarang,
                 'items_jasa' => $this->itemsJasa,
             ]);
@@ -598,7 +717,7 @@ public function simpanTransaksi()
             Log::info('PelangganMobil created/updated', ['id' => $pelangganMobil->id]);
 
             // 2. Create TransaksiService
-            $transaksiService = TransaksiService::create([
+            $transaksiData = [
                 'invoice' => $this->generateInvoice(),
                 'pelanggan_mobil_id' => $pelangganMobil->id,
                 'kasir' => $this->kasir,
@@ -612,15 +731,40 @@ public function simpanTransaksi()
                 'status_pembayaran' => $this->getStatusPembayaranProperty(),
                 'total_barang' => $this->getTotalBarangProperty(),
                 'total_jasa' => $this->getTotalJasaProperty(),
+                'subtotal_sebelum_diskon' => $this->getSubtotalSebelumDiskonProperty(),
                 'total_keseluruhan' => $this->getTotalKeseluruhanProperty(),
                 'total_sudah_dibayar' => $this->total_sudah_dibayar + $this->jumlah_dibayar_sekarang,
                 'sisa_pembayaran' => $this->getSisaPembayaranProperty(),
                 'jatuh_tempo' => ($this->getStatusPembayaranProperty() !== 'lunas') ? $this->jatuh_tempo : null,
                 'no_surat_pesanan' => $this->no_surat_pesanan ?: null,
                 'keterangan_pembayaran' => $this->keterangan_pembayaran ?: null,
+                'diskon' => $this->diskon,
+                'tipe_diskon' => $this->tipe_diskon,
+            ];
+
+            Log::info('TransaksiService data before create', [
+                'transaksi_data' => $transaksiData,
+                'discount_specific' => [
+                    'diskon' => $this->diskon,
+                    'tipe_diskon' => $this->tipe_diskon,
+                    'total_keseluruhan' => $this->getTotalKeseluruhanProperty()
+                ]
             ]);
 
-            Log::info('TransaksiService created', ['id' => $transaksiService->id, 'invoice' => $transaksiService->invoice]);
+            $transaksiService = TransaksiService::create($transaksiData);
+
+            Log::info('TransaksiService created - verifying saved discount data', [
+                'id' => $transaksiService->id,
+                'invoice' => $transaksiService->invoice,
+                'saved_diskon' => $transaksiService->diskon,
+                'saved_tipe_diskon' => $transaksiService->tipe_diskon,
+                'saved_subtotal_sebelum_diskon' => $transaksiService->subtotal_sebelum_diskon,
+                'saved_total_keseluruhan' => $transaksiService->total_keseluruhan,
+                'expected_diskon' => $this->diskon,
+                'expected_tipe_diskon' => $this->tipe_diskon,
+                'expected_subtotal_sebelum_diskon' => $this->getSubtotalSebelumDiskonProperty(),
+                'expected_total_keseluruhan' => $this->getTotalKeseluruhanProperty()
+            ]);
 
             // 3. Create ServiceBarangItems
             foreach ($this->itemsBarang as $index => $item) {
@@ -643,6 +787,7 @@ public function simpanTransaksi()
                             'jumlah' => (int) $item['jumlah'],
                             'satuan' => $item['satuan'] ?? 'pcs',
                             'harga_jual' => (float) $item['harga_jual'],
+                            'harga_beli_manual' => (float) $item['harga_beli_manual'],
                             'subtotal' => (float) $item['subtotal'],
                             'is_manual' => true,
                             'created_at' => now(),
@@ -746,6 +891,37 @@ public function simpanTransaksi()
 
             DB::commit();
 
+            $freshRecord = TransaksiService::find($transaksiService->id);
+            Log::info('POST-COMMIT VERIFICATION - Fresh record from database', [
+                'invoice' => $freshRecord->invoice,
+                'fresh_diskon' => $freshRecord->diskon,
+                'fresh_tipe_diskon' => $freshRecord->tipe_diskon,
+                'fresh_subtotal_sebelum_diskon' => $freshRecord->subtotal_sebelum_diskon,
+                'fresh_total_keseluruhan' => $freshRecord->total_keseluruhan,
+                'fresh_sisa_pembayaran' => $freshRecord->sisa_pembayaran,
+                'component_values' => [
+                    'diskon' => $this->diskon,
+                    'tipe_diskon' => $this->tipe_diskon,
+                    'calculated_total' => $this->getTotalKeseluruhanProperty(),
+                    'calculated_sisa' => $this->getSisaPembayaranProperty()
+                ]
+            ]);
+
+            if ($freshRecord->total_keseluruhan != $this->getTotalKeseluruhanProperty()) {
+                Log::error('CRITICAL: Total keseluruhan mismatch after save!', [
+                    'expected' => $this->getTotalKeseluruhanProperty(),
+                    'saved' => $freshRecord->total_keseluruhan,
+                    'difference' => $freshRecord->total_keseluruhan - $this->getTotalKeseluruhanProperty()
+                ]);
+            }
+
+            if ($freshRecord->diskon != $this->diskon) {
+                Log::error('CRITICAL: Diskon value mismatch after save!', [
+                    'expected' => $this->diskon,
+                    'saved' => $freshRecord->diskon
+                ]);
+            }
+
             $statusText = $this->getStatusText(
                 $this->getStatusPembayaranProperty(), 
                 $this->strategi_pembayaran, 
@@ -760,9 +936,15 @@ public function simpanTransaksi()
 
             session()->flash('message', $successMessage);
             
-            Log::info('Transaction saved successfully', [
+            Log::info('Transaction saved successfully with final discount verification', [
                 'invoice' => $transaksiService->invoice,
                 'total' => $transaksiService->total_keseluruhan,
+                'final_diskon_check' => [
+                    'component_diskon' => $this->diskon,
+                    'component_tipe_diskon' => $this->tipe_diskon,
+                    'saved_diskon' => $transaksiService->diskon,
+                    'saved_tipe_diskon' => $transaksiService->tipe_diskon
+                ]
             ]);
 
             $this->isSaving = false;
@@ -778,6 +960,11 @@ public function simpanTransaksi()
             Log::error('Error in simpanTransaksi: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'user_id' => Auth::id(),
+                'discount_info' => [
+                    'diskon' => $this->diskon,
+                    'tipe_diskon' => $this->tipe_diskon,
+                    'total_keseluruhan' => $this->getTotalKeseluruhanProperty()
+                ],
                 'items_barang' => $this->itemsBarang,
                 'items_jasa' => $this->itemsJasa,
             ]);
@@ -794,6 +981,7 @@ public function simpanTransaksi()
             'jumlah_manual' => 'required|integer|min:1',
             'satuan_manual' => 'required|string|max:20',
             'harga_jual_manual' => 'required|numeric|min:0',
+            'harga_beli_manual' => 'required|numeric|min:0',
         ]);
 
         try {
@@ -810,6 +998,7 @@ public function simpanTransaksi()
                 // Update existing manual item
                 $this->itemsBarang[$existingIndex]['jumlah'] += $this->jumlah_manual;
                 $this->itemsBarang[$existingIndex]['harga_jual'] = $this->harga_jual_manual;
+                $this->itemsBarang[$existingIndex]['harga_beli_manual'] = $this->harga_beli_manual;
                 $this->itemsBarang[$existingIndex]['subtotal'] = $this->itemsBarang[$existingIndex]['jumlah'] * $this->harga_jual_manual;
                 
                 session()->flash('success', 'Barang manual berhasil diperbarui!');
@@ -821,6 +1010,7 @@ public function simpanTransaksi()
                     'jumlah' => $this->jumlah_manual,
                     'satuan' => $this->satuan_manual,
                     'harga_jual' => $this->harga_jual_manual,
+                    'harga_beli_manual' => $this->harga_beli_manual,
                     'subtotal' => $this->jumlah_manual * $this->harga_jual_manual,
                     'is_manual' => true, // Flag untuk identifikasi barang manual
                     'stok_tersedia' => 'ORDER' // Menunjukkan bahwa ini adalah order
@@ -846,9 +1036,6 @@ public function simpanTransaksi()
             $this->addError('general', 'Terjadi kesalahan saat menambah barang manual.');
         }
     }
-
-    // Perbaiki method tambahItemBarang untuk memastikan data lengkap
-    
 
     private function getStatusText($statusPembayaran, $strategiPembayaran, $statusPekerjaan, $sisaPembayaran)
     {
@@ -893,49 +1080,47 @@ public function simpanTransaksi()
         return $statusText;
     }
 
-private function generateInvoice(): string
-{
-    $prefix = 'FJS';
-    $month = strtoupper(now()->format('M'));
-    $year = now()->format('Y');
-    $dateSegment = "{$prefix}/{$month}/{$year}";
+    private function generateInvoice(): string
+    {
+        $prefix = 'FJS';
+        $month = strtoupper(now()->format('M'));
+        $year = now()->format('Y');
+        $dateSegment = "{$prefix}/{$month}/{$year}";
 
-    $maxRetries = 5;
-    
-    for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
-        try {
-            return DB::transaction(function () use ($dateSegment, $prefix, $month, $year) {
-                // Gunakan LIKE dengan pattern yang lebih spesifik
-                $pattern = "___/{$prefix}/{$month}/{$year}";
-                
-                $result = DB::selectOne("
-                    SELECT COALESCE(MAX(CAST(SUBSTRING(invoice, 1, 3) AS UNSIGNED)), 0) as last_number
-                    FROM transaksi_services 
-                    WHERE invoice LIKE ? 
-                    AND LENGTH(invoice) = ?
-                    FOR UPDATE
-                ", [$pattern, strlen($pattern)]);
+        $maxRetries = 5;
+        
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                return DB::transaction(function () use ($dateSegment, $prefix, $month, $year) {
+                    // Gunakan LIKE dengan pattern yang lebih spesifik
+                    $pattern = "___/{$prefix}/{$month}/{$year}";
+                    
+                    $result = DB::selectOne("
+                        SELECT COALESCE(MAX(CAST(SUBSTRING(invoice, 1, 3) AS UNSIGNED)), 0) as last_number
+                        FROM transaksi_services 
+                        WHERE invoice LIKE ? 
+                        AND LENGTH(invoice) = ?
+                        FOR UPDATE
+                    ", [$pattern, strlen($pattern)]);
 
-                $newNumber = ($result->last_number ?? 0) + 1;
-                $numberFormatted = str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+                    $newNumber = ($result->last_number ?? 0) + 1;
+                    $numberFormatted = str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+                    
+                    return "{$numberFormatted}/{$dateSegment}";
+                });
+            } catch (\Exception $e) {
+                if ($attempt >= $maxRetries) {
+                    throw new \Exception("Gagal generate invoice setelah {$maxRetries} percobaan: " . $e->getMessage());
+                }
                 
-                return "{$numberFormatted}/{$dateSegment}";
-            });
-        } catch (\Exception $e) {
-            if ($attempt >= $maxRetries) {
-                throw new \Exception("Gagal generate invoice setelah {$maxRetries} percobaan: " . $e->getMessage());
+                // Random delay untuk mengurangi collision
+                usleep(rand(10000, 50000)); // 10-50ms
             }
-            
-            // Random delay untuk mengurangi collision
-            usleep(rand(10000, 50000)); // 10-50ms
         }
+        
+        // Fallback
+        throw new \Exception("Unexpected error in invoice generation");
     }
-    
-    // Fallback
-    throw new \Exception("Unexpected error in invoice generation");
-}
-
-
 
     private function reduceStockFifo($barangId, $jumlahDibutuhkan)
     {
@@ -981,8 +1166,75 @@ private function generateInvoice(): string
         }
     }
 
+    public function resetJasaInputs()
+    {
+        $this->nama_jasa = '';
+        $this->harga_jasa = 0;
+        $this->keterangan_jasa = '';
+        $this->resetErrorBag(['nama_jasa', 'harga_jasa']);
+    }
+
     public function render()
     {
         return view('livewire.transaksi-services');
     }
+
+    // Method ini bisa dihapus atau disederhanakan:
+    public function updatedStrategiPembayaran($value)
+    {
+        // Tidak perlu lagi karena selalu cicilan
+        $this->updatePaymentAmount();
+    }
+
+    public function updatedStatusPekerjaan($value)
+    {
+        $this->updatePaymentAmount();
+    }
+
+    // Fixed payment amount validation
+    public function updatedJumlahDibayarSekarang($value)
+    {
+        $total = $this->getTotalKeseluruhanProperty();
+        
+        // Ensure payment doesn't exceed total
+        if ($value > $total) {
+            $this->jumlah_dibayar_sekarang = $total;
+        }
+        
+        // Ensure payment is not negative
+        if ($value < 0) {
+            $this->jumlah_dibayar_sekarang = 0;
+        }
+    }
+
+    public function resetFormInputs()
+    {
+        $this->selectedBarangInfo = null;
+        $this->barang_id = '';
+        $this->jumlah = 1;
+        $this->harga_jual = 0;
+        $this->resetErrorBag(['jumlah', 'harga_jual']);
+        $this->dispatch('form-reset');
+    }
+
+    public function setQuickPayment($type)
+    {
+        $totalAfterDiscount = $this->total_keseluruhan;
+        
+        switch ($type) {
+            case 'half':
+                $this->jumlah_dibayar_sekarang = floor($totalAfterDiscount / 2);
+                break;
+            case 'full':
+                $this->jumlah_dibayar_sekarang = $totalAfterDiscount;
+                break;
+            default:
+                $this->jumlah_dibayar_sekarang = 0;
+                break;
+        }
+        
+        // Trigger reactive updates
+        $this->dispatch('payment-updated');
+    }
+
 }

@@ -10,18 +10,18 @@ class ServicePayment extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
+     protected $fillable = [
         'transaksi_service_id',
         'tanggal_bayar',
         'jumlah_bayar',
         'metode_pembayaran',
         'keterangan',
-        'kasir',
+        'kasir'
     ];
 
     protected $casts = [
         'tanggal_bayar' => 'date',
-        'jumlah_bayar' => 'decimal:2',
+        'jumlah_bayar' => 'decimal:2'
     ];
 
     /**

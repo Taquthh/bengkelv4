@@ -23,6 +23,7 @@ class Transaksi extends Model
         'total_harga' => 'decimal:2',
     ];
 
+    
     public function itemPenjualan()
     {
         return $this->hasMany(PenjualanItem::class, 'penjualan_id');

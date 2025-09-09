@@ -24,6 +24,10 @@ class RiwayatService extends Component
     use WithPagination, WithFileUploads;
 
     // Filter properties
+    public $activeTab = 'barang';
+    public $selectedBarangItems = [];
+    public $manualItems = [];
+    public $jasaItems = [];
     public $search = '';
     public $statusFilter = '';
     public $paymentFilter = '';
@@ -61,7 +65,7 @@ class RiwayatService extends Component
     public $itemType = 'barang'; // 'barang', 'jasa', or 'manual'
     public $suggestedPrice = 0;
 
-    // Service properties for adding
+    // Service properties for adding - FIXED NAMES
     public $namaJasaBaru = '';
     public $hargaJasaBaru = 0;
     public $keteranganJasaBaru = '';
@@ -71,12 +75,14 @@ class RiwayatService extends Component
     public $jumlah_manual = 1;
     public $satuan_manual = 'pcs';
     public $harga_jual_manual = 0;
+    public $harga_beli_manual = 0;
 
     // Edit item properties
     public $editingItem = null;
     public $editingItemType = '';
     public $editItemJumlah = 1;
     public $editItemHargaJual = 0;
+    public $editItemHargaBeli = 0;
     public $editNamaJasa = '';
     public $editHargaJasa = 0;
     public $editKeteranganJasa = '';
@@ -110,6 +116,15 @@ class RiwayatService extends Component
     public $editPaymentProof = null;
     public $currentPaymentProof = null;
 
+    public $editingDiscount = false;
+    public $editDiskon = 0;
+    public $editTipeDiskon = 'nominal';
+    public $showDiscountModal = false;
+
+    public $manualDiskon = 0;
+    public $manualTipeDiskon = 'nominal';
+    public $applyDiscountToPayment = false;
+
     protected $rules = [
         'editStatusPekerjaan' => 'required|in:belum_dikerjakan,sedang_dikerjakan,selesai',
         'editStatusPembayaran' => 'required|in:belum,sebagian,lunas',
@@ -119,18 +134,22 @@ class RiwayatService extends Component
         'selectedBarangId' => 'required_if:itemType,barang|exists:barangs,id',
         'itemJumlah' => 'required_if:itemType,barang|integer|min:1',
         'itemHargaJual' => 'required_if:itemType,barang|numeric|min:0',
-        'namaJasaBaru' => 'required_if:itemType,jasa|string|max:255',
-        'hargaJasaBaru' => 'required_if:itemType,jasa|numeric|min:0',
-        'keteranganJasaBaru' => 'nullable|string',
         
-        // Manual item rules - Keep these
-        'nama_barang_manual' => 'required_if:itemType,manual|string|max:255',
-        'jumlah_manual' => 'required_if:itemType,manual|integer|min:1',
-        'satuan_manual' => 'required_if:itemType,manual|string|max:20',
-        'harga_jual_manual' => 'required_if:itemType,manual|numeric|min:0',
+        // FIXED: Proper jasa validation rules
+        'namaJasaBaru' => 'required_when:activeTab,jasa|string|max:255',
+        'hargaJasaBaru' => 'required_when:activeTab,jasa|numeric|min:0',
+        'keteranganJasaBaru' => 'nullable|string|max:500',
+        
+        // Manual item rules
+        'nama_barang_manual' => 'required_when:activeTab,manual|string|max:255',
+        'jumlah_manual' => 'required_when:activeTab,manual|integer|min:1',
+        'satuan_manual' => 'required_when:activeTab,manual|string|max:20',
+        'harga_jual_manual' => 'required_when:activeTab,manual|numeric|min:0',
+        'harga_beli_manual' => 'required_when:activeTab,manual|numeric|min:0',
         
         'editItemJumlah' => 'required|integer|min:1',
         'editItemHargaJual' => 'required|numeric|min:0',
+        'editItemHargaBeli' => 'required|numeric|min:0',
         'editNamaJasa' => 'required|string|max:255',
         'editHargaJasa' => 'required|numeric|min:0',
         'editKeteranganJasa' => 'nullable|string',
@@ -161,37 +180,24 @@ class RiwayatService extends Component
         'itemJumlah.min' => 'Jumlah minimal 1',
         'itemHargaJual.required_if' => 'Harga jual harus diisi',
         'itemHargaJual.min' => 'Harga jual tidak boleh negatif',
-        'namaJasaBaru.required_if' => 'Nama jasa harus diisi',
-        'hargaJasaBaru.required_if' => 'Harga jasa harus diisi',
+        
+        // FIXED: Jasa validation messages
+        'namaJasaBaru.required_when' => 'Nama jasa harus diisi',
+        'namaJasaBaru.max' => 'Nama jasa maksimal 255 karakter',
+        'hargaJasaBaru.required_when' => 'Harga jasa harus diisi',
         'hargaJasaBaru.min' => 'Harga jasa tidak boleh negatif',
+        'keteranganJasaBaru.max' => 'Keterangan maksimal 500 karakter',
         
-        // Manual item messages - Fixed
-        'nama_barang_manual.required_if' => 'Nama barang manual harus diisi',
+        // Manual item messages
+        'nama_barang_manual.required_when' => 'Nama barang manual harus diisi',
         'nama_barang_manual.max' => 'Nama barang maksimal 255 karakter',
-        'jumlah_manual.required_if' => 'Jumlah barang manual harus diisi',
+        'jumlah_manual.required_when' => 'Jumlah barang manual harus diisi',
         'jumlah_manual.min' => 'Jumlah minimal 1',
-        'satuan_manual.required_if' => 'Satuan harus dipilih',
-        'harga_jual_manual.required_if' => 'Harga jual manual harus diisi',
+        'satuan_manual.required_when' => 'Satuan harus dipilih',
+        'harga_jual_manual.required_when' => 'Harga jual manual harus diisi',
         'harga_jual_manual.min' => 'Harga jual tidak boleh negatif',
-        
-        'editItemJumlah.required' => 'Jumlah harus diisi',
-        'editItemJumlah.min' => 'Jumlah minimal 1',
-        'editItemHargaJual.required' => 'Harga jual harus diisi',
-        'editItemHargaJual.min' => 'Harga jual tidak boleh negatif',
-        'editNamaJasa.required' => 'Nama jasa harus diisi',
-        'editHargaJasa.required' => 'Harga jasa harus diisi',
-        'editHargaJasa.min' => 'Harga jasa tidak boleh negatif',
-        
-        // Edit manual item messages
-        'editNamaBarangManual.required' => 'Nama barang manual harus diisi',
-        'editSatuanManual.required' => 'Satuan harus dipilih',
-        
-        'jumlahBayar.required' => 'Jumlah bayar harus diisi',
-        'jumlahBayar.min' => 'Jumlah bayar minimal 1',
-        'metodePembayaran.required' => 'Metode pembayaran harus dipilih',
-        'tanggalBayar.required' => 'Tanggal bayar harus diisi',
-        'buktiPembayaran.mimes' => 'Bukti pembayaran harus berupa file JPG, PNG, atau PDF',
-        'buktiPembayaran.max' => 'Ukuran file maksimal 5MB',
+        'harga_beli_manual.required_when' => 'Harga beli manual harus diisi',
+        'harga_beli_manual.min' => 'Harga beli tidak boleh negatif',
     ];
 
     public function mount()
@@ -277,7 +283,7 @@ class RiwayatService extends Component
         $this->resetPage();
     }
 
-    public function showDetail($transactionId)
+public function showDetail($transactionId)
     {
         $this->selectedTransaction = TransaksiService::with([
             'pelangganMobil',
@@ -416,6 +422,7 @@ class RiwayatService extends Component
             $this->editingItemType = 'barang';
             $this->editItemJumlah = $item->jumlah;
             $this->editItemHargaJual = $item->harga_jual;
+            $this->editItemHargaBeli = $item->harga_beli_manual;
             $this->showEditItemModal = true;
         }
     }
@@ -468,7 +475,7 @@ class RiwayatService extends Component
                     }
 
                     // Reduce additional stock using FIFO
-                    $this->reduceStockFifo($item->barang_id, $selisihJumlah);
+                    $this->reduceStockFifos($item->barang_id, $selisihJumlah);
                 } elseif ($selisihJumlah < 0) {
                     // Return stock if decreasing quantity
                     $returnAmount = abs($selisihJumlah);
@@ -482,15 +489,8 @@ class RiwayatService extends Component
                 $item->update([
                     'jumlah' => $this->editItemJumlah,
                     'harga_jual' => $this->editItemHargaJual,
+                    'harga_beli_manual' => $this->editItemHargaBeli,
                     'subtotal' => $this->editItemJumlah * $this->editItemHargaJual,
-                ]);
-
-                Log::info('Barang item updated', [
-                    'item_id' => $item->id,
-                    'old_jumlah' => $oldJumlah,
-                    'new_jumlah' => $newJumlah,
-                    'new_harga_jual' => $this->editItemHargaJual,
-                    'new_subtotal' => $this->editItemJumlah * $this->editItemHargaJual
                 ]);
 
             } else {
@@ -501,13 +501,6 @@ class RiwayatService extends Component
                     'harga_jasa' => $this->editHargaJasa,
                     'subtotal' => $this->editHargaJasa,
                     'keterangan' => $this->editKeteranganJasa,
-                ]);
-
-                Log::info('Jasa item updated', [
-                    'item_id' => $item->id,
-                    'new_nama_jasa' => $this->editNamaJasa,
-                    'new_harga_jasa' => $this->editHargaJasa,
-                    'new_subtotal' => $this->editHargaJasa
                 ]);
             }
 
@@ -566,7 +559,7 @@ class RiwayatService extends Component
                     if (!$item->is_manual && $item->pembelian_id) {
                         $pembelian = Pembelian::find($item->pembelian_id);
                         if ($pembelian) {
-                            $pembelian->increment('jumlah_tersisa', $item->jumlah);
+                            
                         }
                     }
 
@@ -699,6 +692,9 @@ class RiwayatService extends Component
 
     public function addItemToTransaction()
     {
+        if (!empty($this->selectedBarangItems) || !empty($this->manualItems) || !empty($this->jasaItems)) {
+        return $this->saveAllItemsToTransaction();
+    }
         // Validate transaction exists first
         if (!$this->selectedTransactionId) {
             $this->addError('general', 'Transaction ID is required');
@@ -731,6 +727,7 @@ class RiwayatService extends Component
                 'jumlah_manual' => 'required|integer|min:1',
                 'satuan_manual' => 'required|string|max:20',
                 'harga_jual_manual' => 'required|numeric|min:0',
+                'harga_beli_manual' => 'required|numeric|min:0',
             ], [
                 'nama_barang_manual.required' => 'Nama barang manual harus diisi',
                 'nama_barang_manual.max' => 'Nama barang maksimal 255 karakter',
@@ -739,6 +736,8 @@ class RiwayatService extends Component
                 'satuan_manual.required' => 'Satuan harus dipilih',
                 'harga_jual_manual.required' => 'Harga jual manual harus diisi',
                 'harga_jual_manual.min' => 'Harga jual tidak boleh negatif',
+                'harga_beli_manual.required' => 'Harga beli manual harus diisi',
+                'harga_beli_manual.min' => 'Harga beli tidak boleh negatif',
             ]);
         } else { // jasa
             $this->validate([
@@ -814,6 +813,7 @@ class RiwayatService extends Component
                     'jumlah' => $this->jumlah_manual,
                     'satuan' => $this->satuan_manual ?: 'pcs',
                     'harga_jual' => $this->harga_jual_manual,
+                    'harga_beli_manual' => $this->harga_beli_manual,
                     'subtotal' => $subtotal,
                     'is_manual' => true, // Required flag for manual items
                 ]);
@@ -901,8 +901,20 @@ class RiwayatService extends Component
         $totalJasa = ServiceJasaItem::where('transaksi_service_id', $transaction->id)
             ->sum('subtotal');
 
-        // Recalculate total keseluruhan
-        $totalKeseluruhan = $totalBarang + $totalJasa;
+        // Calculate subtotal before discount
+        $subtotalSebelumDiskon = $totalBarang + $totalJasa;
+
+        $diskonAmount = 0;
+        if ($transaction->diskon > 0) {
+            if ($transaction->tipe_diskon === 'persentase') {
+                $diskonAmount = ($subtotalSebelumDiskon * $transaction->diskon) / 100;
+            } else {
+                $diskonAmount = $transaction->diskon;
+            }
+        }
+
+        // Calculate total after discount
+        $totalKeseluruhan = $subtotalSebelumDiskon - $diskonAmount;
 
         // Recalculate total sudah dibayar
         $totalSudahDibayar = ServicePayment::where('transaksi_service_id', $transaction->id)
@@ -924,50 +936,139 @@ class RiwayatService extends Component
         $transaction->update([
             'total_barang' => $totalBarang,
             'total_jasa' => $totalJasa,
+            'subtotal_sebelum_diskon' => $subtotalSebelumDiskon, // Added subtotal before discount
+            'diskon_amount' => $diskonAmount, // Added discount amount
             'total_keseluruhan' => $totalKeseluruhan,
             'total_sudah_dibayar' => $totalSudahDibayar,
             'sisa_pembayaran' => $sisaPembayaran,
             'status_pembayaran' => $statusPembayaran,
         ]);
 
-        Log::info('Transaction totals recalculated', [
+        Log::info('Transaction totals recalculated with discount', [
             'invoice' => $transaction->invoice,
             'total_barang' => $totalBarang,
             'total_jasa' => $totalJasa,
+            'subtotal_sebelum_diskon' => $subtotalSebelumDiskon,
+            'diskon' => $transaction->diskon,
+            'tipe_diskon' => $transaction->tipe_diskon,
+            'diskon_amount' => $diskonAmount,
             'total_keseluruhan' => $totalKeseluruhan,
             'total_sudah_dibayar' => $totalSudahDibayar,
             'sisa_pembayaran' => $sisaPembayaran,
             'status_pembayaran' => $statusPembayaran
         ]);
     }
-    public $debugInfo = [];
-    public $showDebugModal = false;
 
-    public function addPayment()
+    public function showEditDiscount($transactionId)
+    {
+        $this->selectedTransaction = TransaksiService::find($transactionId);
+        
+        if ($this->selectedTransaction) {
+            $this->selectedTransactionId = $transactionId;
+            $this->editDiskon = $this->selectedTransaction->diskon ?? 0;
+            $this->editTipeDiskon = $this->selectedTransaction->tipe_diskon ?? 'nominal';
+            $this->editingDiscount = true;
+            $this->showDiscountModal = true;
+        }
+    }
+
+    public function updateDiscount()
     {
         $this->validate([
-            'jumlahBayar' => 'required|numeric|min:1',
-            'metodePembayaran' => 'required|in:tunai,transfer',
-            'tanggalBayar' => 'required|date',
-            'keteranganPembayaran' => 'nullable|string',
-            'buktiPembayaran' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'editDiskon' => 'required|numeric|min:0',
+            'editTipeDiskon' => 'required|in:nominal,persentase',
+        ], [
+            'editDiskon.required' => 'Diskon wajib diisi.',
+            'editDiskon.numeric' => 'Diskon harus berupa angka.',
+            'editDiskon.min' => 'Diskon tidak boleh negatif.',
         ]);
+
+        // Validate percentage discount
+        if ($this->editTipeDiskon === 'persentase' && $this->editDiskon > 100) {
+            $this->addError('editDiskon', 'Diskon persentase tidak boleh lebih dari 100%.');
+            return;
+        }
 
         try {
             DB::beginTransaction();
 
-            $transaction = TransaksiService::find($this->selectedTransactionId);
-            if (!$transaction) {
-                throw new \Exception('Transaksi tidak ditemukan');
+            $transaction = TransaksiService::findOrFail($this->selectedTransactionId);
+            
+            // Update discount
+            $transaction->update([
+                'diskon' => $this->editDiskon,
+                'tipe_diskon' => $this->editTipeDiskon,
+            ]);
+
+            // Recalculate totals with new discount
+            $this->recalculateTransactionTotals($transaction);
+
+            DB::commit();
+
+            // Refresh the selected transaction
+            $this->selectedTransaction->refresh();
+            $this->selectedTransaction->load(['servicePayments', 'pelangganMobil']);
+
+            $this->showDiscountModal = false;
+            $this->editingDiscount = false;
+
+            $this->dispatch('discount-updated', [
+                'invoice' => $transaction->invoice,
+                'diskon' => $this->editDiskon,
+                'tipe_diskon' => $this->editTipeDiskon,
+            ]);
+
+            session()->flash('message', 'Diskon berhasil diperbarui!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating discount: ' . $e->getMessage());
+            $this->addError('editDiskon', 'Gagal memperbarui diskon: ' . $e->getMessage());
+        }
+    }
+
+    public function addPayment()
+    {
+        $this->validate([
+            'tanggalBayar' => 'required|date',
+            'jumlahBayar' => 'required|numeric|min:1',
+            'metodePembayaran' => 'required|in:tunai,transfer',
+            'manualDiskon' => 'nullable|numeric|min:0',
+            'manualTipeDiskon' => 'required_with:manualDiskon|in:nominal,persentase',
+        ], [
+            'tanggalBayar.required' => 'Tanggal bayar wajib diisi.',
+            'jumlahBayar.required' => 'Jumlah bayar wajib diisi.',
+            'jumlahBayar.min' => 'Jumlah bayar minimal Rp 1.',
+            'metodePembayaran.required' => 'Metode pembayaran wajib dipilih.',
+            'manualDiskon.numeric' => 'Diskon harus berupa angka.',
+            'manualDiskon.min' => 'Diskon tidak boleh negatif.',
+        ]);
+
+        // Validate percentage discount
+        if ($this->applyDiscountToPayment && $this->manualTipeDiskon === 'persentase' && $this->manualDiskon > 100) {
+            $this->addError('manualDiskon', 'Diskon persentase tidak boleh lebih dari 100%.');
+            return;
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $transaction = TransaksiService::findOrFail($this->selectedTransactionId);
+
+            if ($this->applyDiscountToPayment && $this->manualDiskon > 0) {
+                $transaction->update([
+                    'diskon' => $this->manualDiskon,
+                    'tipe_diskon' => $this->manualTipeDiskon,
+                ]);
+
+                // Recalculate totals with new discount
+                $this->recalculateTransactionTotals($transaction);
+                $transaction->refresh(); // Refresh to get updated totals
             }
 
-            // Check if already paid in full
-            if ($transaction->status_pembayaran === 'lunas') {
-                throw new \Exception('Transaksi sudah lunas');
-            }
-
+            // Validate payment amount doesn't exceed remaining balance
             if ($this->jumlahBayar > $transaction->sisa_pembayaran) {
-                throw new \Exception('Jumlah bayar melebihi sisa pembayaran (Rp' . number_format($transaction->sisa_pembayaran, 0, ',', '.') . ')');
+                throw new \Exception('Jumlah pembayaran melebihi sisa tagihan. Sisa: Rp' . number_format($transaction->sisa_pembayaran, 0, ',', '.'));
             }
 
             // DEBUGGING: Log file info before processing
@@ -1076,16 +1177,6 @@ class RiwayatService extends Component
                 'all_attributes' => $freshPayment->getAttributes()
             ]);
 
-            // Store debug info for display
-            $this->debugInfo = [
-                'file_uploaded' => !is_null($buktiPath),
-                'file_path' => $buktiPath,
-                'file_exists_in_storage' => $buktiPath ? Storage::disk('public')->exists($buktiPath) : false,
-                'payment_id' => $payment->id,
-                'bukti_bayar_saved' => $freshPayment->bukti_bayar,
-                'database_check' => DB::table('service_payments')->where('id', $payment->id)->first()
-            ];
-
             // Recalculate totals after adding payment
             $this->recalculateTransactionTotals($transaction);
 
@@ -1128,8 +1219,13 @@ class RiwayatService extends Component
 
             session()->flash('message', $message);
 
+            // Reset manual discount fields
+            $this->manualDiskon = 0;
+            $this->manualTipeDiskon = 'nominal';
+            $this->applyDiscountToPayment = false;
+
         } catch (\Exception $e) {
-            DB::rollback();
+            DB::rollBack();
             
             // Clean up uploaded file if transaction failed
             if (isset($buktiPath) && $buktiPath && Storage::disk('public')->exists($buktiPath)) {
@@ -1145,8 +1241,18 @@ class RiwayatService extends Component
                 'trace' => $e->getTraceAsString()
             ]);
 
-            $this->addError('general', 'Gagal menambah pembayaran: ' . $e->getMessage());
+            $this->addError('jumlahBayar', 'Gagal menambah pembayaran: ' . $e->getMessage());
         }
+        $this->closeModal();
+    }
+
+    public function closeDiscountModal()
+    {
+        $this->showDiscountModal = false;
+        $this->editingDiscount = false;
+        $this->editDiskon = 0;
+        $this->editTipeDiskon = 'nominal';
+        $this->resetErrorBag();
     }
 
     // DEBUGGING METHOD: Call this to check database structure
@@ -1445,18 +1551,6 @@ class RiwayatService extends Component
             'all_attributes' => $freshPayment->getAttributes()
         ]);
 
-        // Store debug info for display
-        $this->debugInfo = [
-            'file_uploaded' => $newFileUploaded,
-            'file_path' => $buktiPath,
-            'old_file_path' => $oldBuktiPath,
-            'old_file_was_null' => is_null($oldBuktiPath),
-            'file_exists_in_storage' => $buktiPath ? Storage::disk('public')->exists($buktiPath) : false,
-            'payment_id' => $payment->id,
-            'bukti_bayar_saved' => $freshPayment->bukti_bayar,
-            'amount_updated' => $freshPayment->jumlah_bayar,
-            'database_check' => DB::table('service_payments')->where('id', $payment->id)->first()
-        ];
 
         // FIXED: Delete old file ONLY if:
         // 1. New file was uploaded successfully
@@ -1489,6 +1583,7 @@ class RiwayatService extends Component
                 'old_path_was_null' => is_null($oldBuktiPath),
                 'new_file_uploaded' => $newFileUploaded
             ]);
+
         }
 
         // Recalculate transaction totals after updating payment
@@ -1649,40 +1744,91 @@ class RiwayatService extends Component
 
     private function reduceStockFifo($barangId, $jumlahDibutuhkan)
     {
-        $pembelians = Pembelian::where('barang_id', $barangId)
-            ->where('jumlah_tersisa', '>', 0)
-            ->orderBy('tanggal', 'asc')
-            ->orderBy('id', 'asc')
-            ->lockForUpdate()
-            ->get();
+        try {
+            $pembelians = Pembelian::where('barang_id', $barangId)
+                ->where('jumlah_tersisa', '>', 0)
+                ->orderBy('tanggal', 'asc')
+                ->orderBy('id', 'asc')
+                ->lockForUpdate() // Add lock to prevent race conditions
+                ->get();
 
-        $usedPembelians = [];
-        $sisaKebutuhan = $jumlahDibutuhkan;
+            $usedPembelians = [];
+            $sisaKebutuhan = $jumlahDibutuhkan;
 
-        foreach ($pembelians as $pembelian) {
-            if ($sisaKebutuhan <= 0) break;
+            foreach ($pembelians as $pembelian) {
+                if ($sisaKebutuhan <= 0) break;
 
-            $jumlahAmbil = min($sisaKebutuhan, $pembelian->jumlah_tersisa);
+                $jumlahAmbil = min($sisaKebutuhan, $pembelian->jumlah_tersisa);
+                
+                if ($jumlahAmbil > 0) {
+                    $usedPembelians[] = [
+                        'pembelian_id' => $pembelian->id,
+                        'jumlah' => $jumlahAmbil,
+                        'harga_beli' => $pembelian->harga_beli
+                    ];
 
-            if ($jumlahAmbil > 0) {
-                $usedPembelians[] = [
-                    'pembelian_id' => $pembelian->id,
-                    'jumlah' => $jumlahAmbil,
-                    'harga_beli' => $pembelian->harga_beli
-                ];
-
-                $pembelian->decrement('jumlah_tersisa', $jumlahAmbil);
-                $sisaKebutuhan -= $jumlahAmbil;
+                    $sisaKebutuhan -= $jumlahAmbil;
+                }
             }
-        }
 
-        if ($sisaKebutuhan > 0) {
-            throw new \Exception("Stok tidak mencukupi untuk barang ID: {$barangId}");
-        }
+            if ($sisaKebutuhan > 0) {
+                throw new \Exception("Stok tidak mencukupi untuk barang ID: {$barangId}. Kurang: {$sisaKebutuhan}");
+            }
 
-        return $usedPembelians;
+            return $usedPembelians;
+        } catch (\Exception $e) {
+            Log::error('Error in reduceStockFifo: ' . $e->getMessage(), [
+                'barang_id' => $barangId,
+                'jumlah_dibutuhkan' => $jumlahDibutuhkan
+            ]);
+            throw $e;
+        }
     }
 
+    private function reduceStockFifos($barangId, $jumlahDibutuhkan)
+    {
+        try {
+            $pembelians = Pembelian::where('barang_id', $barangId)
+                ->where('jumlah_tersisa', '>', 0)
+                ->orderBy('tanggal', 'asc')
+                ->orderBy('id', 'asc')
+                ->lockForUpdate() // Add lock to prevent race conditions
+                ->get();
+
+            $usedPembelians = [];
+            $sisaKebutuhan = $jumlahDibutuhkan;
+
+            foreach ($pembelians as $pembelian) {
+                if ($sisaKebutuhan <= 0) break;
+
+                $jumlahAmbil = min($sisaKebutuhan, $pembelian->jumlah_tersisa);
+                
+                if ($jumlahAmbil > 0) {
+                    $usedPembelians[] = [
+                        'pembelian_id' => $pembelian->id,
+                        'jumlah' => $jumlahAmbil,
+                        'harga_beli' => $pembelian->harga_beli
+                    ];
+
+                    $pembelian->decrement('jumlah_tersisa', $jumlahAmbil);
+                    $sisaKebutuhan -= $jumlahAmbil;
+                }
+            }
+
+            if ($sisaKebutuhan > 0) {
+                throw new \Exception("Stok tidak mencukupi untuk barang ID: {$barangId}. Kurang: {$sisaKebutuhan}");
+            }
+
+            return $usedPembelians;
+        } catch (\Exception $e) {
+            Log::error('Error in reduceStockFifo: ' . $e->getMessage(), [
+                'barang_id' => $barangId,
+                'jumlah_dibutuhkan' => $jumlahDibutuhkan
+            ]);
+            throw $e;
+        }
+    }
+    
     public function resetAddItemForm()
     {
         $this->selectedBarangId = '';
@@ -1699,6 +1845,7 @@ class RiwayatService extends Component
         $this->jumlah_manual = 1;
         $this->satuan_manual = 'pcs';
         $this->harga_jual_manual = 0;
+        $this->harga_beli_manual = 0;
         
         $this->resetErrorBag();
     }
@@ -1709,6 +1856,7 @@ class RiwayatService extends Component
         $this->editingItemType = '';
         $this->editItemJumlah = 1;
         $this->editItemHargaJual = 0;
+        $this->editItemHargaBeli = 0;
         $this->editNamaJasa = '';
         $this->editHargaJasa = 0;
         $this->editKeteranganJasa = '';
@@ -1737,6 +1885,10 @@ class RiwayatService extends Component
         $this->resetEditItemForm();
         $this->resetManualItemForm();
         $this->resetErrorBag();
+        $this->showAddItemModal = false;
+        $this->selectedTransactionId = null;
+        $this->selectedTransaction = null;
+        $this->resetItemForm();
     }
     public function getOptimizedSummaryStatsProperty()
     {
@@ -1762,7 +1914,8 @@ class RiwayatService extends Component
         ];
     }
 
-    /**
+
+     /**
      * Reset summary statistics when filters change
      */
     public function updatedDateFrom()
@@ -1853,6 +2006,379 @@ class RiwayatService extends Component
         $this->harga_jual_manual = 0;
         $this->resetErrorBag(['nama_barang_manual', 'jumlah_manual', 'satuan_manual', 'harga_jual_manual']);
     }
-
+     public function resetItemForm()
+    {
+        $this->selectedBarangId = null;
+        $this->itemJumlah = 1;
+        $this->itemHargaJual = null;
+        $this->nama_barang_manual = '';
+        $this->jumlah_manual = 1;
+        $this->satuan_manual = 'pcs';
+        $this->harga_jual_manual = null;
+        $this->harga_beli_manual = null;
+        $this->namaJasaBaru = '';
+        $this->hargaJasaBaru = null;
+        $this->keteranganJasaBaru = '';
+        
+        $this->selectedBarangItems = [];
+        $this->manualItems = [];
+        $this->jasaItems = [];
+        $this->activeTab = 'barang';
+        
+        $this->resetErrorBag();
+    }
     
+    public function addBarangToList()
+    {
+        $this->validate([
+            'selectedBarangId' => 'required|exists:barangs,id',
+            'itemJumlah' => 'required|integer|min:1',
+            'itemHargaJual' => 'required|numeric|min:0',
+        ], [
+            'selectedBarangId.required' => 'Pilih barang terlebih dahulu',
+            'selectedBarangId.exists' => 'Barang yang dipilih tidak valid',
+            'itemJumlah.required' => 'Jumlah harus diisi',
+            'itemJumlah.min' => 'Jumlah minimal 1',
+            'itemHargaJual.required' => 'Harga jual harus diisi',
+            'itemHargaJual.min' => 'Harga jual tidak boleh negatif',
+        ]);
+
+        // Check if barang already added
+        foreach ($this->selectedBarangItems as $item) {
+            if ($item['barang_id'] == $this->selectedBarangId) {
+                $this->addError('selectedBarangId', 'Barang sudah ditambahkan ke daftar');
+                return;
+            }
+        }
+
+        // Check stock availability
+        $barang = collect($this->availableBarangs)->firstWhere('id', $this->selectedBarangId);
+        if (!$barang) {
+            $this->addError('selectedBarangId', 'Barang tidak ditemukan');
+            return;
+        }
+
+        if ($this->itemJumlah > $barang['stok']) {
+            $this->addError('itemJumlah', "Stok tidak mencukupi. Tersedia: {$barang['stok']}");
+            return;
+        }
+
+        // Add to list
+        $this->selectedBarangItems[] = [
+            'barang_id' => $this->selectedBarangId,
+            'nama' => $barang['nama'],
+            'merk' => $barang['merk'] ?? '',
+            'jumlah' => $this->itemJumlah,
+            'harga_jual' => $this->itemHargaJual,
+            'subtotal' => $this->itemJumlah * $this->itemHargaJual,
+        ];
+
+        // Reset form
+        $this->selectedBarangId = null;
+        $this->itemJumlah = 1;
+        $this->itemHargaJual = null;
+        $this->suggestedPrice = 0;
+
+        session()->flash('message', 'Barang ditambahkan ke daftar');
+    }
+
+    // Remove barang from list
+    public function removeBarangFromList($index)
+    {
+        if (isset($this->selectedBarangItems[$index])) {
+            unset($this->selectedBarangItems[$index]);
+            $this->selectedBarangItems = array_values($this->selectedBarangItems);
+        }
+    }
+
+    // Add manual item to the list
+    public function addManualToList()
+    {
+        // Custom validation for manual items
+        $errors = [];
+        
+        if (empty(trim($this->nama_barang_manual))) {
+            $errors['nama_barang_manual'] = 'Nama barang manual harus diisi';
+        } elseif (strlen(trim($this->nama_barang_manual)) > 255) {
+            $errors['nama_barang_manual'] = 'Nama barang maksimal 255 karakter';
+        }
+        
+        if (!is_numeric($this->jumlah_manual) || $this->jumlah_manual < 1) {
+            $errors['jumlah_manual'] = 'Jumlah harus berupa angka dan minimal 1';
+        }
+        
+        if (empty(trim($this->satuan_manual))) {
+            $errors['satuan_manual'] = 'Satuan harus dipilih';
+        }
+        
+        if (!is_numeric($this->harga_jual_manual) || $this->harga_jual_manual < 0) {
+            $errors['harga_jual_manual'] = 'Harga jual harus berupa angka dan tidak boleh negatif';
+        }
+        
+        if (!is_numeric($this->harga_beli_manual) || $this->harga_beli_manual < 0) {
+            $errors['harga_beli_manual'] = 'Harga beli harus berupa angka dan tidak boleh negatif';
+        }
+
+        // If there are validation errors, add them and return
+        if (!empty($errors)) {
+            foreach ($errors as $field => $message) {
+                $this->addError($field, $message);
+            }
+            return;
+        }
+
+        try {
+            // Add to list
+            $this->manualItems[] = [
+                'nama_barang' => trim($this->nama_barang_manual),
+                'jumlah' => (int)$this->jumlah_manual,
+                'satuan' => trim($this->satuan_manual),
+                'harga_jual' => (float)$this->harga_jual_manual,
+                'harga_beli_manual' => (float)$this->harga_beli_manual,
+                'subtotal' => (int)$this->jumlah_manual * (float)$this->harga_jual_manual,
+            ];
+
+            // Reset form
+            $this->nama_barang_manual = '';
+            $this->jumlah_manual = 1;
+            $this->satuan_manual = 'pcs';
+            $this->harga_jual_manual = 0;
+            $this->harga_beli_manual = 0;
+
+            // Clear any previous errors
+            $this->resetErrorBag(['nama_barang_manual', 'jumlah_manual', 'satuan_manual', 'harga_jual_manual', 'harga_beli_manual']);
+
+            session()->flash('message', 'Barang manual ditambahkan ke daftar');
+            
+        } catch (\Exception $e) {
+            Log::error('Error adding manual item to list: ' . $e->getMessage());
+            $this->addError('general', 'Gagal menambahkan barang manual: ' . $e->getMessage());
+        }
+    }
+
+    // Remove manual item from list
+    public function removeManualFromList($index)
+    {
+        if (isset($this->manualItems[$index])) {
+            unset($this->manualItems[$index]);
+            $this->manualItems = array_values($this->manualItems);
+        }
+    }
+
+
+    // Add jasa to the list
+    public function addJasaToList()
+    {
+        // FIXED: Use custom validation instead of relying on form validation
+        $errors = [];
+        
+        if (empty(trim($this->namaJasaBaru))) {
+            $errors['namaJasaBaru'] = 'Nama jasa harus diisi';
+        } elseif (strlen(trim($this->namaJasaBaru)) > 255) {
+            $errors['namaJasaBaru'] = 'Nama jasa maksimal 255 karakter';
+        }
+        
+        if (!is_numeric($this->hargaJasaBaru) || $this->hargaJasaBaru < 0) {
+            $errors['hargaJasaBaru'] = 'Harga jasa harus berupa angka dan tidak boleh negatif';
+        } elseif ($this->hargaJasaBaru == 0) {
+            $errors['hargaJasaBaru'] = 'Harga jasa harus lebih dari 0';
+        }
+        
+        if (!empty($this->keteranganJasaBaru) && strlen(trim($this->keteranganJasaBaru)) > 500) {
+            $errors['keteranganJasaBaru'] = 'Keterangan maksimal 500 karakter';
+        }
+
+        // If there are validation errors, add them and return
+        if (!empty($errors)) {
+            foreach ($errors as $field => $message) {
+                $this->addError($field, $message);
+            }
+            return;
+        }
+
+        // Check if jasa with same name already added
+        foreach ($this->jasaItems as $item) {
+            if (strtolower(trim($item['nama_jasa'])) === strtolower(trim($this->namaJasaBaru))) {
+                $this->addError('namaJasaBaru', 'Jasa dengan nama yang sama sudah ditambahkan');
+                return;
+            }
+        }
+
+        try {
+            // Add to list
+            $this->jasaItems[] = [
+                'nama_jasa' => trim($this->namaJasaBaru),
+                'harga_jasa' => (float)$this->hargaJasaBaru,
+                'keterangan' => !empty(trim($this->keteranganJasaBaru)) ? trim($this->keteranganJasaBaru) : null,
+            ];
+
+            // Reset form
+            $this->namaJasaBaru = '';
+            $this->hargaJasaBaru = 0;
+            $this->keteranganJasaBaru = '';
+
+            // Clear any previous errors
+            $this->resetErrorBag(['namaJasaBaru', 'hargaJasaBaru', 'keteranganJasaBaru']);
+
+            Log::info('Jasa added to list', [
+                'nama_jasa' => trim($this->namaJasaBaru),
+                'harga_jasa' => (float)$this->hargaJasaBaru,
+                'total_jasa_items' => count($this->jasaItems)
+            ]);
+
+            session()->flash('message', 'Jasa berhasil ditambahkan ke daftar');
+            
+        } catch (\Exception $e) {
+            Log::error('Error adding jasa to list: ' . $e->getMessage());
+            $this->addError('general', 'Gagal menambahkan jasa: ' . $e->getMessage());
+        }
+    }
+
+    // Remove jasa from list
+    public function removeJasaFromList($index)
+    {
+        if (isset($this->jasaItems[$index])) {
+            unset($this->jasaItems[$index]);
+            $this->jasaItems = array_values($this->jasaItems);
+        }
+    }
+
+    // Save all items to transaction
+    public function saveAllItemsToTransaction()
+    {
+        // Validate transaction exists
+        if (!$this->selectedTransactionId) {
+            $this->addError('general', 'Transaction ID is required');
+            return;
+        }
+
+        $transaction = TransaksiService::find($this->selectedTransactionId);
+        if (!$transaction) {
+            $this->addError('general', 'Transaksi tidak ditemukan');
+            return;
+        }
+
+        // Check if there are items to save
+        if (empty($this->selectedBarangItems) && empty($this->manualItems) && empty($this->jasaItems)) {
+            $this->addError('general', 'Tidak ada item yang akan disimpan');
+            return;
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $totalItemsAdded = 0;
+            $totalAmount = 0;
+
+            // Process barang items
+            foreach ($this->selectedBarangItems as $item) {
+                // Double check stock availability
+                $availableStock = Pembelian::where('barang_id', $item['barang_id'])
+                    ->where('jumlah_tersisa', '>', 0)
+                    ->sum('jumlah_tersisa');
+
+                if ($item['jumlah'] > $availableStock) {
+                    throw new \Exception("Stok barang {$item['nama']} tidak mencukupi. Tersedia: {$availableStock}");
+                }
+
+                // Reduce stock using FIFO
+                $usedPembelians = $this->reduceStockFifo($item['barang_id'], $item['jumlah']);
+
+                // Create service barang items
+                foreach ($usedPembelians as $used) {
+                    ServiceBarangItem::create([
+                        'transaksi_service_id' => $this->selectedTransactionId,
+                        'pembelian_id' => $used['pembelian_id'],
+                        'barang_id' => $item['barang_id'],
+                        'jumlah' => $used['jumlah'],
+                        'harga_jual' => $item['harga_jual'],
+                        'subtotal' => $used['jumlah'] * $item['harga_jual'],
+                        'is_manual' => false,
+                        'nama_barang_manual' => null,
+                        'satuan' => null,
+                    ]);
+                }
+
+                $totalItemsAdded++;
+                $totalAmount += $item['subtotal'];
+            }
+
+            // Process manual items
+            foreach ($this->manualItems as $item) {
+                ServiceBarangItem::create([
+                    'transaksi_service_id' => $this->selectedTransactionId,
+                    'barang_id' => null,
+                    'pembelian_id' => null,
+                    'nama_barang_manual' => $item['nama_barang'],
+                    'jumlah' => $item['jumlah'],
+                    'satuan' => $item['satuan'],
+                    'harga_jual' => $item['harga_jual'],
+                    'harga_beli_manual' => $item['harga_beli_manual'],
+                    'subtotal' => $item['subtotal'],
+                    'is_manual' => true,
+                ]);
+
+                $totalItemsAdded++;
+                $totalAmount += $item['subtotal'];
+            }
+
+            // FIXED: Process jasa items properly
+            foreach ($this->jasaItems as $item) {
+                $jasaItem = ServiceJasaItem::create([
+                    'transaksi_service_id' => $this->selectedTransactionId,
+                    'nama_jasa' => $item['nama_jasa'],
+                    'harga_jasa' => $item['harga_jasa'],
+                    'subtotal' => $item['harga_jasa'], // For jasa, subtotal = harga_jasa
+                    'keterangan' => $item['keterangan']
+                ]);
+
+                Log::info('Jasa item saved to database', [
+                    'jasa_item_id' => $jasaItem->id,
+                    'transaksi_service_id' => $this->selectedTransactionId,
+                    'nama_jasa' => $item['nama_jasa'],
+                    'harga_jasa' => $item['harga_jasa'],
+                    'keterangan' => $item['keterangan']
+                ]);
+
+                $totalItemsAdded++;
+                $totalAmount += $item['harga_jasa'];
+            }
+
+            // Recalculate transaction totals
+            $this->recalculateTransactionTotals($transaction);
+
+            DB::commit();
+
+            Log::info('All items saved successfully', [
+                'transaction_id' => $this->selectedTransactionId,
+                'total_items_added' => $totalItemsAdded,
+                'total_amount' => $totalAmount,
+                'barang_items' => count($this->selectedBarangItems),
+                'manual_items' => count($this->manualItems),
+                'jasa_items' => count($this->jasaItems)
+            ]);
+
+            $this->closeModal();
+            $this->loadAvailableBarangs(); // Refresh stock data
+            
+            $this->dispatch('items-added', [
+                'invoice' => $transaction->invoice,
+                'total_items' => $totalItemsAdded,
+                'total_amount' => $totalAmount
+            ]);
+
+            session()->flash('message', "Berhasil menambahkan {$totalItemsAdded} item dengan total Rp" . number_format($totalAmount, 0, ',', '.'));
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Error adding multiple items to transaction: ' . $e->getMessage(), [
+                'transaction_id' => $this->selectedTransactionId,
+                'barang_items' => count($this->selectedBarangItems),
+                'manual_items' => count($this->manualItems),
+                'jasa_items' => count($this->jasaItems),
+                'trace' => $e->getTraceAsString()
+            ]);
+            $this->addError('general', 'Gagal menambah item: ' . $e->getMessage());
+        }
+    }
 }

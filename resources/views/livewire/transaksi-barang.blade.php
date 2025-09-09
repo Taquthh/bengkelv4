@@ -43,7 +43,7 @@
                                     <div>
                                         <p class="text-sm text-gray-500 font-medium">Kasir</p>
                                         <input wire:model="kasir" type="text" readonly 
-                                               class="bg-transparent font-semibold text-gray-900 border-none p-0 text-base focus:ring-0 w-28" />
+                                            class="bg-transparent font-semibold text-gray-900 border-none p-0 text-base focus:ring-0 w-28" />
                                     </div>
                                 </div>
                             </div>
@@ -58,8 +58,8 @@
                                     <div>
                                         <p class="text-sm text-gray-500 font-medium">Catatan</p>
                                         <input wire:model="keterangan" type="text" 
-                                               class="bg-transparent font-semibold text-gray-900 border-none p-0 text-base focus:ring-0 w-36" 
-                                               placeholder="Tambah catatan..." />
+                                            class="bg-transparent font-semibold text-gray-900 border-none p-0 text-base focus:ring-0 w-36" 
+                                            placeholder="Tambah catatan..." />
                                     </div>
                                 </div>
                             </div>
@@ -68,30 +68,146 @@
                 </div>
 
                 <!-- Product Selection Area -->
-                <div style="height: 670px" class="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-white/30 p-6 h-[calc(100vh-260px)]">
-                    <!-- Search Header -->
+                <div class="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-white/30 p-6 min-h-[600px]">
+                    <!-- Search + Manual Input Header -->
                     <div class="flex items-center justify-between mb-6">
                         <div>
                             <h2 class="text-2xl font-bold text-gray-900">Daftar Produk</h2>
                             <p class="text-gray-500 text-base">{{ count($barangs) }} item tersedia</p>
                         </div>
-                        <div class="relative w-80">
-                            <input type="text" 
-                                   x-data="{ search: '' }" 
-                                   x-model="search" 
-                                   @input="filterItems($event.target.value)"
-                                   placeholder="Cari produk, merk, atau tipe..." 
-                                   class="w-full px-6 py-4 pl-14 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all duration-300 text-gray-900 placeholder-gray-400 shadow-sm text-base">
-                            <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        <div class="flex items-center space-x-4">
+                            <div class="relative w-80">
+                                <input type="text" 
+                                    x-data="{ search: '' }" 
+                                    x-model="search" 
+                                    @input="filterItems($event.target.value)"
+                                    placeholder="Cari produk, merk, atau tipe..." 
+                                    class="w-full px-6 py-4 pl-14 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all duration-300 text-gray-900 placeholder-gray-400 shadow-sm text-base">
+                                <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <!-- Toggle Manual Input Button -->
+                            <button type="button" 
+                                    onclick="toggleManualInput()"
+                                    class="px-6 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-2xl hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-lg flex items-center space-x-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                                 </svg>
+                                <span>Input Manual</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Manual Input Form (Hidden by default) -->
+                    <div id="manualInputForm" class="hidden mb-6">
+                        <div class="bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl p-6 border-2 border-dashed border-orange-200">
+                            <h3 class="text-lg font-bold text-orange-800 mb-4 flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                                Input Barang Manual
+                            </h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <!-- Nama Barang -->
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Nama Barang</label>
+                                    <input type="text" 
+                                        wire:model="nama_barang_manual"
+                                        placeholder="Nama barang yang akan diorder..."
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200">
+                                    @error('nama_barang_manual') 
+                                        <span class="text-red-500 text-sm mt-1">{{ $message }}</span> 
+                                    @enderror
+                                </div>
+                                
+                                <!-- Quantity -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Jumlah</label>
+                                    <input type="number" 
+                                        wire:model="jumlah_manual"
+                                        min="1" 
+                                        step="1"
+                                        placeholder="Qty"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200">
+                                    @error('jumlah_manual') 
+                                        <span class="text-red-500 text-sm mt-1">{{ $message }}</span> 
+                                    @enderror
+                                </div>
+                                
+                                <!-- Satuan -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Satuan</label>
+                                    <select wire:model="satuan_manual" 
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200">
+                                        <option value="pcs">pcs</option>
+                                        <option value="set">set</option>
+                                        <option value="unit">unit</option>
+                                        <option value="meter">meter</option>
+                                        <option value="liter">liter</option>
+                                        <option value="kg">kg</option>
+                                        <option value="dus">dus</option>
+                                        <option value="box">box</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Harga Jual</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">Rp</span>
+                                        <input type="number" 
+                                            wire:model="harga_jual_manual"
+                                            min="0" 
+                                            step="1000"
+                                            placeholder="0"
+                                            class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200">
+                                    </div>
+                                    @error('harga_jual_manual') 
+                                        <span class="text-red-500 text-sm mt-1">{{ $message }}</span> 
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Harga Beli</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">Rp</span>
+                                        <input type="number" 
+                                            wire:model="harga_beli_manual"
+                                            min="0" 
+                                            step="1000"
+                                            placeholder="0"
+                                            class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200">
+                                    </div>
+                                    @error('harga_beli_manual') 
+                                        <span class="text-red-500 text-sm mt-1">{{ $message }}</span> 
+                                    @enderror
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-end space-x-3 mt-6">
+                                <button type="button" 
+                                        onclick="toggleManualInput()"
+                                        class="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-300 transition-all duration-200">
+                                    Batal
+                                </button>
+                                <button type="button" 
+                                        wire:click="tambahBarangManual"
+                                        class="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-xl hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-lg flex items-center space-x-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                    <span>Tambah Item</span>
+                                </button>
                             </div>
                         </div>
                     </div>
 
                     <!-- Products Grid -->
-                    <div class="grid grid-cols-4 gap-4 overflow-y-auto custom-scrollbar pr-2" style="height: calc(100% - 120px);" id="itemsGrid">
+                    <div class="grid grid-cols-4 gap-4 overflow-y-auto custom-scrollbar pr-2" style="height: 500px;" id="itemsGrid">
                         @foreach($barangs as $barang)
                             @php
                                 $totalStok = $barang->pembelians->sum('jumlah_tersisa');
@@ -101,11 +217,11 @@
                             @endphp
                             <div class="group bg-gradient-to-br from-white to-gray-50 rounded-2xl p-5 border border-gray-100 transition-all duration-300 cursor-pointer item-card
                                         {{ $isOutOfStock ? 'opacity-60 hover:opacity-75' : 'hover:border-blue-300 hover:shadow-xl transform hover:-translate-y-1' }}"
-                                 onclick="{{ $isOutOfStock ? '' : "selectItem({$barang->id}, '" . addslashes($barang->nama) . "', {$totalStok}, " . ($avgHPP ?? 0) . ")" }}"
-                                 data-nama="{{ strtolower($barang->nama) }}"
-                                 data-merk="{{ strtolower($barang->merk ?? '') }}"
-                                 data-tipe="{{ strtolower($barang->tipe ?? '') }}"
-                                 data-deskripsi="{{ strtolower($barang->deskripsi ?? '') }}">
+                                onclick="{{ $isOutOfStock ? '' : "selectItem({$barang->id}, '" . addslashes($barang->nama) . "', {$totalStok}, " . ($avgHPP ?? 0) . ")" }}"
+                                data-nama="{{ strtolower($barang->nama) }}"
+                                data-merk="{{ strtolower($barang->merk ?? '') }}"
+                                data-tipe="{{ strtolower($barang->tipe ?? '') }}"
+                                data-deskripsi="{{ strtolower($barang->deskripsi ?? '') }}">
                                 
                                 <div class="flex justify-between items-start mb-4">
                                     <div class="flex-1 min-w-0">
@@ -148,9 +264,6 @@
                                 </div>
                                 
                                 <div class="flex justify-between items-center pt-3 border-t border-gray-100">
-                                    <div class="text-sm text-gray-500 font-medium">
-                                        💰Hpp Rp{{ number_format(($avgHPP ?? 0)/1000, 0) }}k
-                                    </div>
                                     @if($isOutOfStock)
                                         <div class="bg-gray-200 text-gray-500 text-sm font-bold px-4 py-2 rounded-xl">
                                             STOK HABIS
@@ -165,7 +278,7 @@
                         @endforeach
                     </div>
                 </div>
-            </div>
+            </div> 
 
             <!-- Right Side: Cart & Order Panel -->
             <div class="w-[420px] flex-shrink-0">
@@ -491,6 +604,127 @@ function filterItems(query) {
         }
     });
 }
+
+function toggleManualInput() {
+    const form = document.getElementById('manualInputForm');
+    if (form.classList.contains('hidden')) {
+        form.classList.remove('hidden');
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+    } else {
+        form.classList.add('hidden');
+        
+        // Reset form ketika ditutup juga
+        @this.call('resetManualInputs');
+    }
+}
+
+// Listen for Livewire events
+document.addEventListener('livewire:initialized', () => {
+    // Event untuk hide form setelah item ditambahkan
+    Livewire.on('hide-manual-form', () => {
+        const form = document.getElementById('manualInputForm');
+        form.classList.add('hidden');
+    });
+    
+    // Event ketika manual item berhasil ditambahkan
+    Livewire.on('manual-item-added', () => {
+        // Hide form terlebih dahulu
+        const form = document.getElementById('manualInputForm');
+        form.classList.add('hidden');
+        
+        // Show success notification
+        showSuccessNotification('✅ Barang manual berhasil ditambahkan!');
+    });
+    
+    // Event untuk manual form reset
+    Livewire.on('manual-form-reset', () => {
+        console.log('Manual form reset event received');
+        
+        // Force clear form inputs jika reset Livewire tidak bekerja
+        setTimeout(() => {
+            const formInputs = document.querySelectorAll('#manualInputForm input, #manualInputForm select, #manualInputForm textarea');
+            formInputs.forEach(input => {
+                const wireModel = input.getAttribute('wire:model') || input.getAttribute('wire:model.lazy');
+                
+                if (wireModel) {
+                    switch(wireModel) {
+                        case 'nama_barang_manual':
+                        case 'keterangan_manual':
+                            input.value = '';
+                            break;
+                        case 'jumlah_manual':
+                            input.value = '1';
+                            break;
+                        case 'satuan_manual':
+                            input.value = 'pcs';
+                            break;
+                        case 'harga_jual_manual':
+                        case 'harga_beli_manual':
+                            input.value = '0';
+                            break;
+                    }
+                    
+                    // Trigger input event untuk sync dengan Livewire
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            });
+        }, 100); // Small delay untuk memastikan Livewire sudah selesai
+    });
+    
+    // Event ketika ada error
+    Livewire.on('manual-item-error', (message) => {
+        showErrorNotification('❌ ' + message);
+    });
+});
+
+// Function untuk show success notification
+function showSuccessNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
+    notification.innerHTML = message;
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Remove notification after 3 seconds
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Function untuk show error notification
+function showErrorNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
+    notification.innerHTML = message;
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Remove notification after 5 seconds (longer for errors)
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 300);
+    }, 5000);
+}
+
+
 
 // Keyboard shortcuts
 document.addEventListener('keydown', function(e) {

@@ -14,13 +14,12 @@
     margin: 10mm;
     size: A4;
 }
-
         
         body {
             font-family: 'Arial', sans-serif;
             font-size: 11px;
             line-height: 1.3;
-            color: #333;
+            color: #080808;
             background: white;
         }
         
@@ -52,7 +51,7 @@
         }
         
         .company-info p {
-            color: #666;
+            color: #0a0a0a;
             margin-bottom: 1px;
             font-size: 10px;
         }
@@ -75,7 +74,7 @@
         }
         
         .invoice-info .invoice-date {
-            color: #666;
+            color: #070707;
             font-size: 10px;
         }
         
@@ -95,7 +94,7 @@
             color: #1e40af;
             margin-bottom: 6px;
             padding-bottom: 2px;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid #000000;
         }
         
         .info-box p {
@@ -113,7 +112,7 @@
             color: #1e40af;
             margin-bottom: 6px;
             padding-bottom: 2px;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid #000000;
         }
         
         .service-item {
@@ -122,14 +121,14 @@
         
         .service-item label {
             font-weight: bold;
-            color: #374151;
+            color: #030507;
             display: block;
             margin-bottom: 2px;
             font-size: 10px;
         }
         
         .service-item p {
-            color: #6b7280;
+            color: #0e0e0f;
             font-size: 10px;
         }
         
@@ -143,7 +142,7 @@
             color: #1e40af;
             margin-bottom: 6px;
             padding-bottom: 2px;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid #07080a;
         }
         
         table {
@@ -155,14 +154,14 @@
         th, td {
             padding: 4px;
             text-align: left;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid #000000;
             font-size: 10px;
         }
         
         th {
-            background-color: #f9fafb;
+            background-color: #ffffff;
             font-weight: bold;
-            color: #374151;
+            color: #000000;
         }
         
         .text-center { text-align: center; }
@@ -175,7 +174,7 @@
         
         .item-detail {
             font-size: 9px;
-            color: #6b7280;
+            color: #060607;
         }
         
         .summary-section {
@@ -201,7 +200,7 @@
         }
         
         .summary-total {
-            border-top: 2px solid #374151;
+            border-top: 2px solid #040405;
             font-weight: bold;
             font-size: 12px;
             padding-top: 6px;
@@ -213,7 +212,7 @@
             padding: 8px;
             margin-top: 10px;
             border-radius: 4px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid #909aad;
         }
         
         .payment-row {
@@ -231,7 +230,7 @@
             color: #1e40af;
             margin-bottom: 6px;
             padding-bottom: 2px;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid #909aad;
         }
         
         .bank-item {
@@ -239,7 +238,7 @@
             padding: 6px;
             background-color: #f9fafb;
             border-radius: 3px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid #909aad;
         }
         
         .bank-name {
@@ -251,7 +250,7 @@
         
         .account-info {
             font-size: 9px;
-            color: #6b7280;
+            color: #0b0c0e;
         }
         
         .account-number {
@@ -267,7 +266,7 @@
             text-align: center;
             padding: 6px;
             background-color: #fef2f2;
-            border: 1px solid #fecaca;
+            border: 1px solid #909aad;
             border-radius: 3px;
             margin-bottom: 4px;
         }
@@ -279,7 +278,7 @@
             text-align: center;
             padding: 4px;
             background-color: #eff6ff;
-            border: 1px solid #bfdbfe;
+            border: 1px solid #909aad;
             border-radius: 3px;
         }
         
@@ -309,15 +308,15 @@
         
         .signature-title {
             font-weight: bold;
-            color: #374151;
+            color: #010202;
             margin-bottom: 25px;
             padding-bottom: 2px;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid #909aad;
             font-size: 11px;
         }
         
         .signature-line {
-            border-bottom: 1px solid #374151;
+            border-bottom: 1px solid #050607;
             height: 30px;
             margin-bottom: 6px;
         }
@@ -542,6 +541,24 @@
                     <span>Total Jasa:</span>
                     <span>Rp{{ number_format($transaksi->total_jasa, 0, ',', '.') }}</span>
                 </div>
+                
+                <!-- Discount Information -->
+                @if($transaksi->diskon > 0)
+                    <div class="summary-row">
+                        <span>Subtotal:</span>
+                        <span>Rp{{ number_format($transaksi->total_barang + $transaksi->total_jasa, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Diskon ({{ $transaksi->tipe_diskon == 'persentase' ? $transaksi->diskon.'%' : 'Rp'.number_format($transaksi->diskon, 0, ',', '.') }}):</span>
+                        <span style="color: #dc2626;">-Rp{{ number_format(
+                            $transaksi->tipe_diskon == 'persentase' 
+                                ? ($transaksi->total_barang + $transaksi->total_jasa) * ($transaksi->diskon / 100)
+                                : $transaksi->diskon, 
+                            0, ',', '.'
+                        ) }}</span>
+                    </div>
+                @endif
+                
                 <div class="summary-row summary-total">
                     <span>TOTAL KESELURUHAN:</span>
                     <span>Rp{{ number_format($transaksi->total_keseluruhan, 0, ',', '.') }}</span>

@@ -154,41 +154,7 @@ class Pembelian extends Model
     }
 
     // Static methods
-    public static function processStockReduction($barangId, $jumlahDibutuhkan)
-    {
-        $pembelians = static::where('barang_id', $barangId)
-            ->where('jumlah_tersisa', '>', 0)
-            ->orderBy('tanggal', 'asc')
-            ->orderBy('id', 'asc')
-            ->get();
-
-        $usedPembelians = [];
-        $sisaKebutuhan = $jumlahDibutuhkan;
-
-        foreach ($pembelians as $pembelian) {
-            if ($sisaKebutuhan <= 0) break;
-
-            $jumlahAmbil = min($sisaKebutuhan, $pembelian->jumlah_tersisa);
-            
-            if ($jumlahAmbil > 0) {
-                $usedPembelians[] = [
-                    'pembelian_id' => $pembelian->id,
-                    'jumlah' => $jumlahAmbil,
-                    'harga_beli' => $pembelian->harga_beli,
-                    'supplier' => $pembelian->supplier,
-                    'tanggal' => $pembelian->tanggal
-                ];
-
-                $sisaKebutuhan -= $jumlahAmbil;
-            }
-        }
-
-        if ($sisaKebutuhan > 0) {
-            throw new \Exception("Stok tidak mencukupi. Masih butuh: {$sisaKebutuhan}");
-        }
-
-        return $usedPembelians;
-    }
+    
 
     public static function executeStockReduction($usedPembelians)
     {

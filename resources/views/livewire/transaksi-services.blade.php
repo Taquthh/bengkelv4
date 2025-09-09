@@ -83,13 +83,12 @@
                                         @error('kontak') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                     </div>
 
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Jenis Pelanggan</label>
-                                        <select wire:model="jenis_pelanggan" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                            <option value="perorangan">Perorangan</option>
-                                            <option value="perusahaan">Perusahaan</option>
-                                        </select>
-                                    </div>
+                                    <select wire:model.live="jenis_pelanggan" 
+                                            class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="perorangan">Perorangan</option>
+                                        <option value="perusahaan">Perusahaan</option>
+                                    </select>
+
 
                                     @if($jenis_pelanggan == 'perusahaan')
                                         <div>
@@ -238,7 +237,7 @@
                                                 <option value="set">set</option>
                                                 <option value="unit">unit</option>
                                                 <option value="meter">meter</option>
-                                                <option value="liter">liter</option>
+                                                <option value="liter">liter</liter>
                                                 <option value="kg">kg</option>
                                                 <option value="dus">dus</option>
                                                 <option value="box">box</option>
@@ -247,7 +246,6 @@
                                     </div>
                                     
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                        <!-- Harga Jual -->
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">Harga Jual</label>
                                             <div class="relative">
@@ -260,6 +258,21 @@
                                                        class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200">
                                             </div>
                                             @error('harga_jual_manual') 
+                                                <span class="text-red-500 text-sm mt-1">{{ $message }}</span> 
+                                            @enderror
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Harga Beli</label>
+                                            <div class="relative">
+                                                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">Rp</span>
+                                                <input type="number" 
+                                                       wire:model="harga_beli_manual"
+                                                       min="0" 
+                                                       step="1000"
+                                                       placeholder="0"
+                                                       class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200">
+                                            </div>
+                                            @error('harga_beli_manual') 
                                                 <span class="text-red-500 text-sm mt-1">{{ $message }}</span> 
                                             @enderror
                                         </div>
@@ -338,9 +351,6 @@
                                         </div>
                                         
                                         <div class="flex justify-between items-center pt-3 border-t border-gray-100">
-                                            <div class="text-sm text-gray-500 font-medium">
-                                                💰HPP Rp{{ number_format(($barang['avg_hpp'] ?? 0)/1000, 0) }}k
-                                            </div>
                                             @if($isOutOfStock)
                                                 <div class="bg-gray-200 text-gray-500 text-sm font-bold px-4 py-2 rounded-xl">
                                                     STOK HABIS
@@ -439,171 +449,293 @@
 
 
                     <!-- Step 4: Enhanced Payment System with Fixed Radio Buttons -->
-@if($currentStep == 4)
-    <div class="space-y-6">
-        <div class="flex items-center space-x-4 mb-6">
-            <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    @if($currentStep == 4)
+<div class="space-y-6">
+    <div class="flex items-center space-x-4 mb-6">
+        <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+        </div>
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">Pembayaran</h2>
+            <p class="text-gray-500">Atur pembayaran untuk transaksi ini</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-6">
+        <!-- Status Pekerjaan -->
+        <div class="bg-white rounded-2xl p-6 border border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">🔧 Status Pekerjaan</h3>
+            <div class="space-y-3">
+                <!-- Belum Dikerjakan -->
+                <div class="cursor-pointer" wire:click="$set('status_pekerjaan', 'belum_dikerjakan')">
+                    <div class="p-4 border-2 rounded-xl transition-all duration-300 hover:border-orange-300
+                        {{ $status_pekerjaan == 'belum_dikerjakan' ? 'border-orange-500 bg-orange-50 shadow-md' : 'border-gray-200' }}">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center
+                                {{ $status_pekerjaan == 'belum_dikerjakan' ? 'border-orange-500 bg-orange-500' : 'border-gray-300' }}">
+                                @if($status_pekerjaan == 'belum_dikerjakan')
+                                    <div class="w-2 h-2 bg-white rounded-full"></div>
+                                @endif
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-900">Belum Dikerjakan</div>
+                                <div class="text-sm text-gray-500">Masih menunggu antrian</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sedang Dikerjakan -->
+                <div class="cursor-pointer" wire:click="$set('status_pekerjaan', 'sedang_dikerjakan')">
+                    <div class="p-4 border-2 rounded-xl transition-all duration-300 hover:border-blue-300
+                        {{ $status_pekerjaan == 'sedang_dikerjakan' ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200' }}">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center
+                                {{ $status_pekerjaan == 'sedang_dikerjakan' ? 'border-blue-500 bg-blue-500' : 'border-gray-300' }}">
+                                @if($status_pekerjaan == 'sedang_dikerjakan')
+                                    <div class="w-2 h-2 bg-white rounded-full"></div>
+                                @endif
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-900">Sedang Dikerjakan</div>
+                                <div class="text-sm text-gray-500">Pekerjaan berlangsung</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Selesai -->
+                <div class="cursor-pointer" wire:click="$set('status_pekerjaan', 'selesai')">
+                    <div class="p-4 border-2 rounded-xl transition-all duration-300 hover:border-green-300
+                        {{ $status_pekerjaan == 'selesai' ? 'border-green-500 bg-green-50 shadow-md' : 'border-gray-200' }}">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center
+                                {{ $status_pekerjaan == 'selesai' ? 'border-green-500 bg-green-500' : 'border-gray-300' }}">
+                                @if($status_pekerjaan == 'selesai')
+                                    <div class="w-2 h-2 bg-white rounded-full"></div>
+                                @endif
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-900">Selesai</div>
+                                <div class="text-sm text-gray-500">Pekerjaan sudah selesai</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Form -->
+        <div class="bg-white rounded-2xl p-6 border border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">💳 Pembayaran</h3>
+            
+            <div class="space-y-4">
+                <!-- Payment Method -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Cara Bayar</label>
+                    <select wire:model.live="metode_pembayaran" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <option value="tunai">💵 Tunai</option>
+                        <option value="transfer">🏦 Transfer</option>
+                    </select>
+                </div>
+
+                <!-- Payment Amount Input -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Bayar Sekarang</label>
+                    
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold">Rp</span>
+                        <input wire:model.live="jumlah_dibayar_sekarang" 
+                            type="number" min="0" max="{{ $this->total_keseluruhan }}"
+                            class="w-full pl-12 pr-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 font-semibold text-lg" 
+                            placeholder="0">
+                    </div>
+                    
+                    @error('jumlah_dibayar_sekarang') 
+                        <span class="text-red-500 text-sm">{{ $message }}</span> 
+                    @enderror
+                </div>
+
+                <!-- Quick Payment Buttons -->
+                @if($this->total_keseluruhan > 0)
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" 
+                                wire:click="$set('jumlah_dibayar_sekarang', 0)"
+                                class="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                            Belum Bayar
+                        </button>
+                        <button type="button" 
+                                {{-- Updated to use total after discount for half payment --}}
+                                wire:click="setQuickPayment('half')"
+                                class="px-3 py-2 text-sm bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg transition-colors">
+                            Setengah
+                        </button>
+                        <button type="button" 
+                                {{-- Updated to use total after discount for full payment --}}
+                                wire:click="setQuickPayment('full')"
+                                class="px-3 py-2 text-sm bg-green-100 hover:bg-green-200 text-green-800 rounded-lg transition-colors">
+                            Lunas
+                        </button>
+                    </div>
+                @endif
+
+                <!-- Due Date (only if not fully paid) -->
+                @if($this->status_pembayaran != 'lunas')
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Jatuh Tempo Sisa</label>
+                        <input wire:model="jatuh_tempo" type="date" min="{{ date('Y-m-d') }}" 
+                            class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                    </div>
+                @endif
+
+                <!-- Optional Fields -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">No. Surat Pesanan (Opsional)</label>
+                    <input wire:model="no_surat_pesanan" type="text" 
+                        class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        placeholder="Nomor surat pesanan">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Catatan</label>
+                    <textarea wire:model="keterangan_pembayaran" rows="2" 
+                            class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                            placeholder="Keterangan tambahan"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Discount Section -->
+    <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200">
+        <div class="flex items-center space-x-3 mb-4">
+            <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
                 </svg>
             </div>
             <div>
-                <h2 class="text-2xl font-bold text-gray-900">Pembayaran</h2>
-                <p class="text-gray-500">Atur pembayaran untuk transaksi ini</p>
+                <h3 class="text-lg font-semibold text-gray-800">🏷️ Diskon</h3>
+                <p class="text-sm text-gray-600">Berikan diskon untuk transaksi ini</p>
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-6">
-            <!-- Status Pekerjaan -->
-            <div class="bg-white rounded-2xl p-6 border border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">🔧 Status Pekerjaan</h3>
-                <div class="space-y-3">
-                    <!-- Belum Dikerjakan -->
-                    <div class="cursor-pointer" wire:click="$set('status_pekerjaan', 'belum_dikerjakan')">
-                        <div class="p-4 border-2 rounded-xl transition-all duration-300 hover:border-orange-300
-                            {{ $status_pekerjaan == 'belum_dikerjakan' ? 'border-orange-500 bg-orange-50 shadow-md' : 'border-gray-200' }}">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center
-                                    {{ $status_pekerjaan == 'belum_dikerjakan' ? 'border-orange-500 bg-orange-500' : 'border-gray-300' }}">
-                                    @if($status_pekerjaan == 'belum_dikerjakan')
-                                        <div class="w-2 h-2 bg-white rounded-full"></div>
-                                    @endif
-                                </div>
-                                <div>
-                                    <div class="font-semibold text-gray-900">Belum Dikerjakan</div>
-                                    <div class="text-sm text-gray-500">Masih menunggu antrian</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Sedang Dikerjakan -->
-                    <div class="cursor-pointer" wire:click="$set('status_pekerjaan', 'sedang_dikerjakan')">
-                        <div class="p-4 border-2 rounded-xl transition-all duration-300 hover:border-blue-300
-                            {{ $status_pekerjaan == 'sedang_dikerjakan' ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200' }}">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center
-                                    {{ $status_pekerjaan == 'sedang_dikerjakan' ? 'border-blue-500 bg-blue-500' : 'border-gray-300' }}">
-                                    @if($status_pekerjaan == 'sedang_dikerjakan')
-                                        <div class="w-2 h-2 bg-white rounded-full"></div>
-                                    @endif
-                                </div>
-                                <div>
-                                    <div class="font-semibold text-gray-900">Sedang Dikerjakan</div>
-                                    <div class="text-sm text-gray-500">Pekerjaan berlangsung</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Selesai -->
-                    <div class="cursor-pointer" wire:click="$set('status_pekerjaan', 'selesai')">
-                        <div class="p-4 border-2 rounded-xl transition-all duration-300 hover:border-green-300
-                            {{ $status_pekerjaan == 'selesai' ? 'border-green-500 bg-green-50 shadow-md' : 'border-gray-200' }}">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center
-                                    {{ $status_pekerjaan == 'selesai' ? 'border-green-500 bg-green-500' : 'border-gray-300' }}">
-                                    @if($status_pekerjaan == 'selesai')
-                                        <div class="w-2 h-2 bg-white rounded-full"></div>
-                                    @endif
-                                </div>
-                                <div>
-                                    <div class="font-semibold text-gray-900">Selesai</div>
-                                    <div class="text-sm text-gray-500">Pekerjaan sudah selesai</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        <div class="grid grid-cols-2 gap-4">
+            <!-- Discount Type Selection -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Tipe Diskon</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" 
+                            wire:click="$set('tipe_diskon', 'nominal')"
+                            class="px-4 py-2 text-sm rounded-lg border-2 transition-all duration-300
+                                {{ $tipe_diskon == 'nominal' ? 'border-purple-500 bg-purple-100 text-purple-800' : 'border-gray-300 bg-white text-gray-700 hover:border-purple-300' }}">
+                        💰 Nominal
+                    </button>
+                    <button type="button" 
+                            wire:click="$set('tipe_diskon', 'persentase')"
+                            class="px-4 py-2 text-sm rounded-lg border-2 transition-all duration-300
+                                {{ $tipe_diskon == 'persentase' ? 'border-purple-500 bg-purple-100 text-purple-800' : 'border-gray-300 bg-white text-gray-700 hover:border-purple-300' }}">
+                        📊 Persentase
+                    </button>
                 </div>
             </div>
 
-            <!-- Payment Form -->
-            <div class="bg-white rounded-2xl p-6 border border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">💳 Pembayaran</h3>
+            <!-- Discount Amount Input -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Nilai Diskon
+                    @if($tipe_diskon == 'persentase')
+                        <span class="text-xs text-gray-500">(Max: 100%)</span>
+                    @else
+                        <span class="text-xs text-gray-500">(Max: Rp{{ number_format($this->total_barang + $this->total_jasa, 0, ',', '.') }})</span>
+                    @endif
+                </label>
                 
-                <div class="space-y-4">
-                    <!-- Payment Method -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Cara Bayar</label>
-                        <select wire:model="metode_pembayaran" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                            <option value="tunai">💵 Tunai</option>
-                            <option value="transfer">🏦 Transfer</option>
-                        </select>
-                    </div>
-
-                    <!-- Payment Amount Input -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Bayar Sekarang</label>
-                        
-                        <div class="relative">
-                            <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold">Rp</span>
-                            <input wire:model.live="jumlah_dibayar_sekarang" 
-                                type="number" min="0" max="{{ $this->total_keseluruhan }}"
-                                class="w-full pl-12 pr-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 font-semibold text-lg" 
-                                placeholder="0">
-                        </div>
-                        
-                        @error('jumlah_dibayar_sekarang') 
-                            <span class="text-red-500 text-sm">{{ $message }}</span> 
-                        @enderror
-                    </div>
-
-                    <!-- Quick Payment Buttons -->
-                    @if($this->total_keseluruhan > 0)
-                        <div class="grid grid-cols-3 gap-2">
-                            <button type="button" 
-                                    wire:click="$set('jumlah_dibayar_sekarang', 0)"
-                                    class="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
-                                Belum Bayar
-                            </button>
-                            <button type="button" 
-                                    wire:click="$set('jumlah_dibayar_sekarang', {{ floor($this->total_keseluruhan / 2) }})"
-                                    class="px-3 py-2 text-sm bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg transition-colors">
-                                Setengah
-                            </button>
-                            <button type="button" 
-                                    wire:click="$set('jumlah_dibayar_sekarang', {{ $this->total_keseluruhan }})"
-                                    class="px-3 py-2 text-sm bg-green-100 hover:bg-green-200 text-green-800 rounded-lg transition-colors">
-                                Lunas
-                            </button>
-                        </div>
+                <div class="relative">
+                    @if($tipe_diskon == 'nominal')
+                        <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold">Rp</span>
+                        <input wire:model.live="diskon" 
+                            type="number" min="0" max="{{ $this->total_barang + $this->total_jasa }}"
+                            class="w-full pl-12 pr-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-semibold" 
+                            placeholder="0">
+                    @else
+                        <input wire:model.live="diskon" 
+                            type="number" min="0" max="100" step="0.1"
+                            class="w-full pl-4 pr-12 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-semibold" 
+                            placeholder="0">
+                        <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold">%</span>
                     @endif
-
-                    <!-- Due Date (only if not fully paid) -->
-                    @if($this->status_pembayaran != 'lunas')
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Jatuh Tempo Sisa</label>
-                            <input wire:model="jatuh_tempo" type="date" min="{{ date('Y-m-d') }}" 
-                                class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
-                        </div>
-                    @endif
-
-                    <!-- Optional Fields -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">No. Surat Pesanan (Opsional)</label>
-                        <input wire:model="no_surat_pesanan" type="text" 
-                            class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                            placeholder="Nomor surat pesanan">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Catatan</label>
-                        <textarea wire:model="keterangan_pembayaran" rows="2" 
-                                class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                placeholder="Keterangan tambahan"></textarea>
-                    </div>
                 </div>
+                
+                @error('diskon') 
+                    <span class="text-red-500 text-sm">{{ $message }}</span> 
+                @enderror
             </div>
         </div>
 
-        <!-- Simplified Payment Status Display -->
-        @php
-            $statusPembayaran = $this->status_pembayaran;
-            $sisaPembayaran = $this->sisa_pembayaran;
-            $totalDibayar = $total_sudah_dibayar + $jumlah_dibayar_sekarang;
-        @endphp
-        
+        <!-- Quick Discount Buttons -->
+        <div class="mt-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Diskon Cepat</label>
+            <div class="grid grid-cols-5 gap-2">
+                <button type="button" 
+                        wire:click="hapusDiskon"
+                        class="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">
+                    Hapus
+                </button>
+                <button type="button" 
+                        wire:click="setDiskonPersentase(5)"
+                        class="px-3 py-2 text-sm bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg transition-colors">
+                    5%
+                </button>
+                <button type="button" 
+                        wire:click="setDiskonPersentase(10)"
+                        class="px-3 py-2 text-sm bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg transition-colors">
+                    10%
+                </button>
+                <button type="button" 
+                        wire:click="setDiskonPersentase(15)"
+                        class="px-3 py-2 text-sm bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg transition-colors">
+                    15%
+                </button>
+                <button type="button" 
+                        wire:click="setDiskonPersentase(20)"
+                        class="px-3 py-2 text-sm bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg transition-colors">
+                    20%
+                </button>
+            </div>
+        </div>
+
+        <!-- Discount Preview -->
+        @if($diskon > 0)
+            <div class="mt-4 p-4 bg-white rounded-xl border border-purple-200">
+                <div class="text-sm space-y-1">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Subtotal:</span>
+                        <span class="font-semibold">Rp{{ number_format($this->total_barang + $this->total_jasa, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="flex justify-between text-purple-600">
+                        <span>Diskon ({{ $tipe_diskon == 'persentase' ? $diskon.'%' : 'Rp'.number_format($diskon, 0, ',', '.') }}):</span>
+                        <span class="font-semibold">-Rp{{ number_format($this->jumlah_diskon, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="flex justify-between text-lg font-bold text-green-600 border-t border-gray-200 pt-2">
+                        <span>Total Setelah Diskon:</span>
+                        <span>Rp{{ number_format($this->total_keseluruhan, 0, ',', '.') }}</span>
+                    </div>
+                </div>
+            </div>
+        @endif
     </div>
+
+    <!-- Simplified Payment Status Display -->
+    @php
+        $statusPembayaran = $this->status_pembayaran;
+        $sisaPembayaran = $this->sisa_pembayaran;
+        $totalDibayar = $this->total_sudah_dibayar + $this->jumlah_dibayar_sekarang;
+    @endphp
+</div>
+
 @endif
 
                     <!-- Navigation Buttons -->
@@ -779,6 +911,27 @@
                             <span class="text-gray-600">Total Jasa:</span>
                             <span class="font-semibold">Rp{{ number_format($this->total_jasa, 0, ',', '.') }}</span>
                         </div>
+
+                        <!-- Added discount section -->
+                        @if($diskon > 0)
+                            <div class="flex justify-between text-sm border-t border-gray-100 pt-2">
+                                <span class="text-gray-600">Subtotal:</span>
+                                <span class="font-semibold">Rp{{ number_format($this->subtotal_sebelum_diskon, 0, ',', '.') }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-red-600">
+                                    Diskon 
+                                    @if($tipe_diskon == 'persentase')
+                                        ({{ $diskon }}%)
+                                    @else
+                                        (Nominal)
+                                    @endif
+                                    :
+                                </span>
+                                <span class="font-semibold text-red-600">-Rp{{ number_format($this->jumlah_diskon, 0, ',', '.') }}</span>
+                            </div>
+                        @endif
+                        
                         <div class="flex justify-between text-lg font-bold border-t border-gray-200 pt-3">
                             <span class="text-gray-900">Total Keseluruhan:</span>
                             <span class="text-green-600">Rp{{ number_format($this->total_keseluruhan, 0, ',', '.') }}</span>
@@ -811,20 +964,12 @@
                                 <!-- Payment Rules Info -->
                                 <div class="mt-3 pt-2 border-t border-blue-200">
                                     <div class="text-xs text-blue-700">
-                                        @if($strategi_pembayaran == 'bayar_akhir')
-                                            @if($status_pekerjaan != 'selesai')
-                                                ⏳ Pembayaran setelah pekerjaan selesai
-                                            @else
-                                                ✅ Pekerjaan selesai, bisa dibayar
-                                            @endif
-                                        @elseif($strategi_pembayaran == 'bayar_dimuka')
-                                            @if($status_pekerjaan == 'belum_dikerjakan')
-                                                ⏳ Pembayaran saat mulai dikerjakan
-                                            @else
-                                                ✅ Pekerjaan dimulai, bisa dibayar
-                                            @endif
+                                        @if($metode_pembayaran == 'tunai')
+                                            💵 Metode pembayaran: Tunai
+                                        @elseif($metode_pembayaran == 'transfer')
+                                            🏦 Metode pembayaran: Transfer
                                         @else
-                                            💳 Bisa bayar kapan saja (fleksibel)
+                                            💳 Silakan pilih metode pembayaran
                                         @endif
                                     </div>
                                 </div>
@@ -1208,37 +1353,126 @@ document.addEventListener('input', function(e) {
 });
 
 function toggleManualInput() {
-                                const form = document.getElementById('manualInputForm');
-                                if (form.classList.contains('hidden')) {
-                                    form.classList.remove('hidden');
-                                    form.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                } else {
-                                    form.classList.add('hidden');
-                                }
-                            }
-                            
-                            // Listen for Livewire events
-                            document.addEventListener('livewire:initialized', () => {
-                                Livewire.on('hide-manual-form', () => {
-                                    const form = document.getElementById('manualInputForm');
-                                    form.classList.add('hidden');
-                                });
-                                
-                                Livewire.on('manual-item-added', () => {
-                                    // Show success notification
-                                    const notification = document.createElement('div');
-                                    notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-                                    notification.innerHTML = '✅ Barang manual berhasil ditambahkan!';
-                                    document.body.appendChild(notification);
-                                    
-                                    // Remove notification after 3 seconds
-                                    setTimeout(() => {
-                                        notification.remove();
-                                    }, 3000);
-                                });
-                            });
+    const form = document.getElementById('manualInputForm');
+    if (form.classList.contains('hidden')) {
+        form.classList.remove('hidden');
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+    } else {
+        form.classList.add('hidden');
+        
+        // Reset form ketika ditutup juga
+        @this.call('resetManualInputs');
+    }
+}
+
+// Listen for Livewire events
+document.addEventListener('livewire:initialized', () => {
+    // Event untuk hide form setelah item ditambahkan
+    Livewire.on('hide-manual-form', () => {
+        const form = document.getElementById('manualInputForm');
+        form.classList.add('hidden');
+    });
+    
+    // Event ketika manual item berhasil ditambahkan
+    Livewire.on('manual-item-added', () => {
+        // Hide form terlebih dahulu
+        const form = document.getElementById('manualInputForm');
+        form.classList.add('hidden');
+        
+        // Show success notification
+        showSuccessNotification('✅ Barang manual berhasil ditambahkan!');
+    });
+    
+    // Event untuk manual form reset
+    Livewire.on('manual-form-reset', () => {
+        console.log('Manual form reset event received');
+        
+        // Force clear form inputs jika reset Livewire tidak bekerja
+        setTimeout(() => {
+            const formInputs = document.querySelectorAll('#manualInputForm input, #manualInputForm select, #manualInputForm textarea');
+            formInputs.forEach(input => {
+                const wireModel = input.getAttribute('wire:model') || input.getAttribute('wire:model.lazy');
+                
+                if (wireModel) {
+                    switch(wireModel) {
+                        case 'nama_barang_manual':
+                        case 'keterangan_manual':
+                            input.value = '';
+                            break;
+                        case 'jumlah_manual':
+                            input.value = '1';
+                            break;
+                        case 'satuan_manual':
+                            input.value = 'pcs';
+                            break;
+                        case 'harga_jual_manual':
+                        case 'harga_beli_manual':
+                            input.value = '0';
+                            break;
+                    }
+                    
+                    // Trigger input event untuk sync dengan Livewire
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            });
+        }, 100); // Small delay untuk memastikan Livewire sudah selesai
+    });
+    
+    // Event ketika ada error
+    Livewire.on('manual-item-error', (message) => {
+        showErrorNotification('❌ ' + message);
+    });
+});
+
+// Function untuk show success notification
+function showSuccessNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
+    notification.innerHTML = message;
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Remove notification after 3 seconds
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Function untuk show error notification
+function showErrorNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
+    notification.innerHTML = message;
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Remove notification after 5 seconds (longer for errors)
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 300);
+    }, 5000);
+}
 
 // console.log('Enhanced payment system with fixed logic loaded');
 console.log('Payment strategies: bayar_akhir, bayar_dimuka, cicilan');
 console.log('Keyboard shortcuts: Ctrl+S (save), Enter (add item), Escape (cancel/clear)');
 </script>
+</existing_code>

@@ -96,25 +96,51 @@ class PembelianIndex extends Component
         ]);
 
         if ($this->pembelianId) {
-            // EDIT mode
-            Pembelian::where('id', $this->pembelianId)->update([
+            $pembelian = Pembelian::findOrFail($this->pembelianId);
+
+            $oldJumlah = $pembelian->jumlah;
+            $oldSisa = $pembelian->jumlah_tersisa;
+            $newJumlah = intval($this->jumlah);
+
+            $selisih = $newJumlah - $oldJumlah;
+
+            // Hitung jumlah yang sudah terpakai
+            $jumlahTerpakai = $oldJumlah - $oldSisa;
+
+            if ($selisih > 0) {
+                // Tambah stok
+                $newSisa = $oldSisa + $selisih;
+            } else {
+                // Kurangi stok, tapi tidak boleh lebih kecil dari 0 dan tidak boleh kurangi barang yang sudah terpakai
+                $newSisa = $newJumlah - $jumlahTerpakai;
+                if ($newSisa < 0) {
+                    $newSisa = 0;
+                }
+            }
+
+            // Clamp agar tidak melebihi jumlah baru
+            if ($newSisa > $newJumlah) {
+                $newSisa = $newJumlah;
+            }
+
+            $pembelian->update([
                 'barang_id' => $this->barang_id,
                 'supplier' => $this->supplier,
                 'harga_beli' => $this->harga_beli,
-                'jumlah' => $this->jumlah,
+                'jumlah' => $newJumlah,
+                'jumlah_tersisa' => $newSisa,
                 'tanggal' => $this->tanggal ?? now()->toDateString(),
                 'keterangan' => $this->keterangan,
-                // jumlah_tersisa tidak diubah agar stok FIFO tetap jalan
             ]);
         } else {
             // CREATE mode
-            $jumlah = intval($this->jumlah); // memastikan tipe integer
+            $jumlah = intval($this->jumlah);
             Pembelian::create([
                 'barang_id' => $this->barang_id,
                 'supplier' => $this->supplier,
                 'harga_beli' => $this->harga_beli,
                 'jumlah' => $jumlah,
-                'jumlah_tersisa' => $jumlah, // auto set sisa = jumlah awal
+                'jumlah_tersisa' => $jumlah, // default sama dengan jumlah awal
                 'tanggal' => $this->tanggal ?? now()->toDateString(),
                 'keterangan' => $this->keterangan,
             ]);

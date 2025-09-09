@@ -32,73 +32,6 @@
                 </div>
             </div>
 
-            <!-- Quick Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                @if(Auth::user()->role === 'owner')
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                        <div class="flex items-center">
-                            <div class="p-3 bg-green-500 rounded-full">
-                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                                </svg>
-                            </div>
-                            <div class="ml-4">
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Pendapatan Hari Ini</h3>
-                                <p class="text-2xl font-bold text-green-600">Rp 2.450.000</p>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
-                @if(in_array(Auth::user()->role, ['kasir', 'owner']))
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                        <div class="flex items-center">
-                            <div class="p-3 bg-blue-500 rounded-full">
-                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                            </div>
-                            <div class="ml-4">
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Order Hari Ini</h3>
-                                <p class="text-2xl font-bold text-blue-600">12</p>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
-                @if(in_array(Auth::user()->role, ['kasir', 'owner']))
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                        <div class="flex items-center">
-                            <div class="p-3 bg-yellow-500 rounded-full">
-                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                            <div class="ml-4">
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Sedang Dikerjakan</h3>
-                                <p class="text-2xl font-bold text-yellow-600">5</p>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
-                @if(Auth::user()->role === 'owner')
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                        <div class="flex items-center">
-                            <div class="p-3 bg-purple-500 rounded-full">
-                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                </svg>
-                            </div>
-                            <div class="ml-4">
-                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Total Staff</h3>
-                                <p class="text-2xl font-bold text-purple-600">8</p>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-            </div>
-
             <!-- Menu Berdasarkan Role -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 
@@ -152,6 +85,24 @@
                         Kelola Inventory
                     </button>
                 </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                    <div class="flex items-center justify-between mb-4">
+                       <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Pengeluaran Operasional</h3>
+                        <div class="p-2 bg-orange-100 dark:bg-yellow-900 rounded-lg">
+                            <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                    d="M3 10h18M3 6h18M3 14h18M3 18h18"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">Lihat dan kelola  laporan pengeluaran operasional</p>
+                    <a href="{{ route('pengeluaran.operasional') }}" 
+                    class="inline-flex items-center px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 transition-colors">
+                    Kelola Operasional
+                    </a>
+                </div>
+
 
                 <!-- Modal Inventory -->
                 <div id="inventoryModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
@@ -309,59 +260,99 @@
                             </a>
                         </div>
 
+                        
+
                     </div>
                 </div>
 
 
                 @endif
-
                 @if(Auth::user()->role === 'keuangan')
-                    <!-- Menu untuk Keuangan -->
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+
+                    <!-- Laporan Mingguan -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Laporan Keuangan</h3>
-                            <div class="p-2 bg-green-100 dark:bg-green-900 rounded-full">
-                                <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Laporan Mingguan</h3>
+                            <div class="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-full">
+                                <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 6h18M3 14h18M3 18h18"/>
                                 </svg>
                             </div>
                         </div>
-                        <p class="text-gray-600 dark:text-gray-400 mb-4">Buat laporan pendapatan dan pengeluaran</p>
-                        <a href="" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        <p class="text-gray-600 dark:text-gray-400 mb-4">Ringkasan pendapatan & pengeluaran tiap minggu.</p>
+                        <a href="" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
                             Lihat Laporan
                         </a>
                     </div>
 
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                    <!-- Laporan Bulanan -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Kelola Pengeluaran</h3>
-                            <div class="p-2 bg-red-100 dark:bg-red-900 rounded-full">
-                                <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Laporan Bulanan</h3>
+                            <div class="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-full">
+                                <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                 </svg>
                             </div>
                         </div>
-                        <p class="text-gray-600 dark:text-gray-400 mb-4">Catat dan kelola pengeluaran operasional</p>
-                        <a href="" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                            Kelola Pengeluaran
+                        <p class="text-gray-600 dark:text-gray-400 mb-4">Rekap bulanan untuk evaluasi keuangan bengkel.</p>
+                        <a href="" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                            Lihat Laporan
                         </a>
                     </div>
 
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                    <!-- Laporan Sparepart -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Piutang Customer</h3>
-                            <div class="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-full">
-                                <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Laporan Sparepart</h3>
+                            <div class="p-2 bg-purple-100 dark:bg-purple-900 rounded-full">
+                                <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V7a2 2 0 00-2-2h-4l-2-2H6a2 2 0 00-2 2v6m16 0a2 2 0 01-2 2h-4l-2 2H6a2 2 0 01-2-2m16 0v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6"/>
                                 </svg>
                             </div>
                         </div>
-                        <p class="text-gray-600 dark:text-gray-400 mb-4">Kelola piutang dan pembayaran customer</p>
-                        <a href="" class="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
-                            Kelola Piutang
+                        <p class="text-gray-600 dark:text-gray-400 mb-4">Pengeluaran & stok sparepart.</p>
+                        <a href="" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                            Lihat Laporan
                         </a>
                     </div>
+
+                    <!-- Laporan Operasional -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Laporan Operasional</h3>
+                            <div class="p-2 bg-blue-100 dark:bg-blue-900 rounded-full">
+                                <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c1.104 0 2-.896 2-2s-.896-2-2-2-2 .896-2 2 .896 2 2 2zm0 2c-2.21 0-4 1.79-4 4v6h8v-6c0-2.21-1.79-4-4-4z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-400 mb-4">Biaya operasional bengkel.</p>
+                        <a href="" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Lihat Laporan
+                        </a>
+                    </div>
+
+                    <!-- Laporan Piutang -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Laporan Piutang</h3>
+                            <div class="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-full">
+                                <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v2m14 0v6a2 2 0 01-2 2H5a2 2 0 01-2-2V9m14 0h2a2 2 0 012 2v2a2 2 0 01-2 2h-2"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-400 mb-4">Tagihan & pembayaran tertunda.</p>
+                        <a href="" class="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
+                            Lihat Laporan
+                        </a>
+                    </div>
+
+                </div>
                 @endif
+
+
 
                 @if(Auth::user()->role === 'owner')
                     <!-- Menu untuk Owner -->
@@ -441,6 +432,8 @@
                         </a>
                     </div>
                 @endif
+
+                
 
             </div>
         </div>

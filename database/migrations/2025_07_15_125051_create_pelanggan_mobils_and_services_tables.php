@@ -5,8 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
-    public function up(): void
-    {
+    public function up(): void {
         // === PELANGGAN & MOBIL ===
         Schema::create('pelanggan_mobils', function (Blueprint $table) {
             $table->id();
@@ -22,7 +21,6 @@ return new class extends Migration {
             $table->text('catatan_mobil')->nullable();
             $table->timestamps();
             $table->softDeletes();
-
             $table->index(['nama_pelanggan', 'nopol', 'jenis_pelanggan']);
         });
 
@@ -38,7 +36,6 @@ return new class extends Migration {
             $table->text('pekerjaan_dilakukan')->nullable();
             $table->enum('metode_pembayaran', ['tunai', 'transfer', 'piutang'])->default('tunai');
             $table->enum('strategi_pembayaran', ['bayar_akhir', 'bayar_dimuka', 'cicilan'])->default('bayar_akhir');
-            // $table->enum('status_pembayaran', ['belum_bayar', 'sudah_bayar', 'lunas'])->default('belum_bayar');
             $table->enum('status_pembayaran', ['lunas', 'belum', 'sebagian'])->default('belum');
             $table->enum('status_pekerjaan', ['belum_dikerjakan', 'sedang_dikerjakan', 'selesai'])->default('belum_dikerjakan');
             $table->decimal('total_barang', 15, 2)->default(0);
@@ -55,7 +52,6 @@ return new class extends Migration {
             $table->datetime('waktu_diambil')->nullable();
             $table->timestamps();
             $table->softDeletes();
-
             $table->index(['tanggal_service', 'kasir', 'status_pembayaran', 'status_service', 'metode_pembayaran'], 'idx_service_status');
         });
 
@@ -76,17 +72,21 @@ return new class extends Migration {
         Schema::create('service_barang_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('transaksi_service_id')->constrained()->onDelete('cascade');
-            $table->foreignId('pembelian_id')->constrained()->onDelete('cascade');
-            $table->foreignId('barang_id')->constrained()->onDelete('cascade');
+            $table->foreignId('pembelian_id')->nullable()->constrained()->onDelete('cascade');
+            $table->foreignId('barang_id')->nullable()->constrained()->onDelete('cascade');
+            $table->string('nama_barang_manual')->nullable();
+            $table->string('satuan', 50)->nullable();
+            $table->boolean('is_manual')->default(false);
             $table->integer('jumlah');
             $table->decimal('harga_jual', 12, 2);
+            $table->decimal('harga_beli_manual', 15, 2)->nullable();
             $table->decimal('subtotal', 12, 2);
             $table->timestamps();
             $table->softDeletes();
             $table->index('transaksi_service_id');
         });
 
-        // === PEMBAYARAN (pengganti pembayaran_cicilan) ===
+        // === PEMBAYARAN SERVICE ===
         Schema::create('service_payments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('transaksi_service_id')->constrained()->onDelete('cascade');
@@ -99,31 +99,13 @@ return new class extends Migration {
             $table->timestamps();
             $table->index(['transaksi_service_id', 'tanggal_bayar', 'kasir']);
         });
-
-        // === Tambahan softDeletes untuk barangs dan pembelians ===
-        Schema::table('barangs', function (Blueprint $table) {
-            $table->softDeletes();
-        });
-
-        Schema::table('pembelians', function (Blueprint $table) {
-            $table->softDeletes();
-        });
     }
 
-    public function down(): void
-    {
+    public function down(): void {
         Schema::dropIfExists('service_payments');
         Schema::dropIfExists('service_barang_items');
         Schema::dropIfExists('service_jasa_items');
         Schema::dropIfExists('transaksi_services');
         Schema::dropIfExists('pelanggan_mobils');
-
-        Schema::table('barangs', function (Blueprint $table) {
-            $table->dropSoftDeletes();
-        });
-
-        Schema::table('pembelians', function (Blueprint $table) {
-            $table->dropSoftDeletes();
-        });
     }
 };

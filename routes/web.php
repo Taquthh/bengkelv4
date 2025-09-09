@@ -1,10 +1,18 @@
 <?php
 
 use App\Livewire\BarangPembelian;
+use App\Livewire\PengeluaranOperasionals;
 use App\Livewire\TransaksiServices;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Livewire\BarangIndex;
+use App\Livewire\DashboardKeuangan;
+use App\Livewire\LaporanBulanan;
+use App\Livewire\LaporanKeuangan;
+use App\Livewire\LaporanMingguan;
+use App\Livewire\LaporanOperasional;
+use App\Livewire\LaporanPiutang;
+use App\Livewire\LaporanSparepart;
 use App\Livewire\PembelianIndex;
 use App\Livewire\PenjualanCreate;
 use App\Livewire\RiwayatService;
@@ -34,7 +42,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/transaksi-service', TransaksiServices::class)->name('transaksi.services');  
         Route::get('/riwayat-transaksi-barang', RiwayatTransaksiBarang::class)->name('riwayat.transaksi.barang');
         Route::get('/riwayat-service', RiwayatService::class)->name('riwayat.service');
-
+        Route::get('/operasional', PengeluaranOperasionals::class)->name('pengeluaran.operasional');
         // // Opsional: daftar riwayat penjualan
         // Route::get('/penjualan', PenjualanIndex::class)->name('penjualan.index');
     });
@@ -45,17 +53,14 @@ Route::middleware(['auth'])->group(function () {
         ->name('service.invoice.print');
 
 
-    Route::middleware(['auth', 'role:kasir'])->group(function () {
-        Route::get('/kasir', fn () => view('kasir.index'))->name('kasir.index');
+    Route::middleware(['auth', 'role:keuangan,'])->group(function () {
+        Route::get('/laporan-mingguan', LaporanMingguan::class)->name('dashboard.keuangan');
+        Route::get('/laporan-bulanan', LaporanBulanan::class)->name('laporan.keuangan');
+        Route::get('/laporan-sparepart', LaporanSparepart::class)->name('laporan.keuangan');
+        Route::get('/laporan-operasional', LaporanOperasional::class)->name('laporan.keuangan');
+        Route::get('/laporan-piutang', LaporanPiutang::class)->name('laporan.keuangan');
     });
 
-    Route::middleware(['role:keuangan'])->group(function () {
-        Route::get('/keuangan', fn () => view('keuangan.index'))->name('keuangan.index');
-    });
-
-    Route::middleware(['role:owner'])->group(function () {
-        Route::get('/owner', fn () => view('owner.index'))->name('owner.index');
-    });
 });
 
 
