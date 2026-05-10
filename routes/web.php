@@ -54,8 +54,8 @@ Route::middleware(['auth'])->group(function () {
 
 
     Route::middleware(['auth', 'role:keuangan,'])->group(function () {
-        Route::get('/laporan-mingguan', LaporanMingguan::class)->name('dashboard.keuangan');
-        Route::get('/laporan-bulanan', LaporanBulanan::class)->name('laporan.keuangan');
+        Route::get('/laporan-mingguan', LaporanMingguan::class)->name('laporan.mingguan');
+        Route::get('/laporan-bulanan', LaporanBulanan::class)->name('laporan.bulanan');
         Route::get('/laporan-sparepart', LaporanSparepart::class)->name('laporan.keuangan');
         Route::get('/laporan-operasional', LaporanOperasional::class)->name('laporan.keuangan');
         Route::get('/laporan-piutang', LaporanPiutang::class)->name('laporan.keuangan');

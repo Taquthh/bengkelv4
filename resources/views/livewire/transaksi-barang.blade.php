@@ -529,35 +529,7 @@
 <script>
 function selectItem(barangId, namaBarang, stok, avgHPP) {
     if (stok <= 0) {
-        // Show out of stock message
-        const toast = document.createElement('div');
-        toast.className = 'fixed top-6 right-6 bg-gradient-to-r from-red-500 via-pink-500 to-red-500 text-white px-8 py-4 rounded-3xl shadow-2xl z-50 flex items-center space-x-4 transform translate-x-full border border-white/20 backdrop-blur-lg';
-        toast.innerHTML = `
-            <div class="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </div>
-            <div>
-                <div class="font-bold text-lg">Stok Habis!</div>
-                <div class="text-sm opacity-90">Item ini sedang tidak tersedia</div>
-            </div>
-        `;
-        document.body.appendChild(toast);
-        
-        // Slide in animation
-        setTimeout(() => {
-            toast.style.transform = 'translateX(0)';
-            toast.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
-        }, 100);
-        
-        // Slide out and remove
-        setTimeout(() => {
-            toast.style.transform = 'translateX(100%)';
-            toast.style.transition = 'transform 0.3s ease-in';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-        
+        showNotification('Stok Habis!', 'Item ini sedang tidak tersedia', 'error');
         return;
     }
     
@@ -567,9 +539,6 @@ function selectItem(barangId, namaBarang, stok, avgHPP) {
         const form = document.getElementById('selectedItemForm');
         if (form) {
             form.classList.remove('hidden');
-            // Auto-suggest sale price (30% markup)
-            const suggestedPrice = Math.round(avgHPP * 1.3);
-            // Focus on quantity input first
             setTimeout(() => {
                 const qtyInput = form.querySelector('input[wire\\:model="jumlah"]');
                 if (qtyInput) {
@@ -611,188 +580,20 @@ function toggleManualInput() {
         form.classList.remove('hidden');
         form.scrollIntoView({ behavior: 'smooth', block: 'center' });
         
+        // Focus pada input nama barang
+        setTimeout(() => {
+            const namaInput = form.querySelector('input[wire\\:model="nama_barang_manual"]');
+            if (namaInput) {
+                namaInput.focus();
+            }
+        }, 300);
     } else {
         form.classList.add('hidden');
-        
-        // Reset form ketika ditutup juga
-        @this.call('resetManualInputs');
+        // Panggil reset hanya saat form ditutup
+        @this.call('forceResetManualInputs');
     }
 }
 
-// Listen for Livewire events
-document.addEventListener('livewire:initialized', () => {
-    // Event untuk hide form setelah item ditambahkan
-    Livewire.on('hide-manual-form', () => {
-        const form = document.getElementById('manualInputForm');
-        form.classList.add('hidden');
-    });
-    
-    // Event ketika manual item berhasil ditambahkan
-    Livewire.on('manual-item-added', () => {
-        // Hide form terlebih dahulu
-        const form = document.getElementById('manualInputForm');
-        form.classList.add('hidden');
-        
-        // Show success notification
-        showSuccessNotification('✅ Barang manual berhasil ditambahkan!');
-    });
-    
-    // Event untuk manual form reset
-    Livewire.on('manual-form-reset', () => {
-        console.log('Manual form reset event received');
-        
-        // Force clear form inputs jika reset Livewire tidak bekerja
-        setTimeout(() => {
-            const formInputs = document.querySelectorAll('#manualInputForm input, #manualInputForm select, #manualInputForm textarea');
-            formInputs.forEach(input => {
-                const wireModel = input.getAttribute('wire:model') || input.getAttribute('wire:model.lazy');
-                
-                if (wireModel) {
-                    switch(wireModel) {
-                        case 'nama_barang_manual':
-                        case 'keterangan_manual':
-                            input.value = '';
-                            break;
-                        case 'jumlah_manual':
-                            input.value = '1';
-                            break;
-                        case 'satuan_manual':
-                            input.value = 'pcs';
-                            break;
-                        case 'harga_jual_manual':
-                        case 'harga_beli_manual':
-                            input.value = '0';
-                            break;
-                    }
-                    
-                    // Trigger input event untuk sync dengan Livewire
-                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-            });
-        }, 100); // Small delay untuk memastikan Livewire sudah selesai
-    });
-    
-    // Event ketika ada error
-    Livewire.on('manual-item-error', (message) => {
-        showErrorNotification('❌ ' + message);
-    });
-});
-
-// Function untuk show success notification
-function showSuccessNotification(message) {
-    const notification = document.createElement('div');
-    notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
-    notification.innerHTML = message;
-    document.body.appendChild(notification);
-    
-    // Animate in
-    setTimeout(() => {
-        notification.classList.remove('translate-x-full');
-    }, 100);
-    
-    // Remove notification after 3 seconds
-    setTimeout(() => {
-        notification.classList.add('translate-x-full');
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, 300);
-    }, 3000);
-}
-
-// Function untuk show error notification
-function showErrorNotification(message) {
-    const notification = document.createElement('div');
-    notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
-    notification.innerHTML = message;
-    document.body.appendChild(notification);
-    
-    // Animate in
-    setTimeout(() => {
-        notification.classList.remove('translate-x-full');
-    }, 100);
-    
-    // Remove notification after 5 seconds (longer for errors)
-    setTimeout(() => {
-        notification.classList.add('translate-x-full');
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, 300);
-    }, 5000);
-}
-
-
-
-// Keyboard shortcuts
-document.addEventListener('keydown', function(e) {
-    // Enter to add item when form is visible
-    if (e.key === 'Enter' && !document.getElementById('selectedItemForm').classList.contains('hidden')) {
-        e.preventDefault();
-        @this.call('tambahItem');
-    }
-    
-    // Escape to cancel selection
-    if (e.key === 'Escape') {
-        resetForm();
-    }
-});
-
-document.addEventListener('livewire:init', () => {
-    Livewire.on('item-added', () => {
-        const form = document.getElementById('selectedItemForm');
-        if (form) {
-            form.classList.add('hidden');
-        }
-        
-        // Enhanced toast notification with animation
-        const toast = document.createElement('div');
-        toast.className = 'fixed top-6 right-6 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 text-white px-8 py-4 rounded-3xl shadow-2xl z-50 flex items-center space-x-4 transform translate-x-full border border-white/20 backdrop-blur-lg';
-        toast.innerHTML = `
-            <div class="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-                </svg>
-            </div>
-            <div>
-                <div class="font-bold text-lg">Item Ditambahkan!</div>
-                <div class="text-sm opacity-90">Berhasil ditambahkan ke keranjang</div>
-            </div>
-        `;
-        document.body.appendChild(toast);
-        
-        // Slide in animation
-        setTimeout(() => {
-            toast.style.transform = 'translateX(0)';
-            toast.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
-        }, 100);
-        
-        // Slide out and remove
-        setTimeout(() => {
-            toast.style.transform = 'translateX(100%)';
-            toast.style.transition = 'transform 0.3s ease-in';
-            setTimeout(() => toast.remove(), 300);
-        }, 3500);
-        
-        // Add success pulse effect to cart
-        const cartSection = document.querySelector('.w-\\[420px\\]');
-        if (cartSection) {
-            cartSection.style.animation = 'pulse 0.6s ease-in-out';
-        }
-    });
-    
-    // Listen for form reset/cancel events
-    Livewire.on('form-reset', () => {
-        const form = document.getElementById('selectedItemForm');
-        if (form) {
-            form.classList.add('hidden');
-        }
-    });
-});
-
-// Update the resetFormInputs function call
 function resetForm() {
     @this.call('resetFormInputs');
     const form = document.getElementById('selectedItemForm');
@@ -800,6 +601,143 @@ function resetForm() {
         form.classList.add('hidden');
     }
 }
+
+// Universal notification function
+function showNotification(title, message, type = 'success') {
+    const colors = {
+        success: {
+            bg: 'from-emerald-500 via-green-500 to-teal-500',
+            icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>`
+        },
+        error: {
+            bg: 'from-red-500 via-pink-500 to-red-500',
+            icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>`
+        },
+        warning: {
+            bg: 'from-yellow-500 via-orange-500 to-red-500',
+            icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>`
+        }
+    };
+    
+    const config = colors[type] || colors.success;
+    
+    const notification = document.createElement('div');
+    notification.className = `fixed top-6 right-6 bg-gradient-to-r ${config.bg} text-white px-8 py-4 rounded-3xl shadow-2xl z-50 flex items-center space-x-4 transform translate-x-full border border-white/20 backdrop-blur-lg`;
+    notification.innerHTML = `
+        <div class="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                ${config.icon}
+            </svg>
+        </div>
+        <div>
+            <div class="font-bold text-lg">${title}</div>
+            <div class="text-sm opacity-90">${message}</div>
+        </div>
+    `;
+    document.body.appendChild(notification);
+    
+    // Slide in
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+        notification.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    }, 100);
+    
+    // Slide out
+    const duration = type === 'error' ? 5000 : 3500;
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        notification.style.transition = 'transform 0.3s ease-in';
+        setTimeout(() => notification.remove(), 300);
+    }, duration);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Enter to add item when form is visible
+    if (e.key === 'Enter') {
+        const manualForm = document.getElementById('manualInputForm');
+        const selectedForm = document.getElementById('selectedItemForm');
+        
+        if (!manualForm.classList.contains('hidden')) {
+            // Di form manual, cek apakah sedang fokus di input
+            const activeElement = document.activeElement;
+            if (activeElement && activeElement.tagName === 'INPUT' || activeElement.tagName === 'SELECT') {
+                e.preventDefault();
+                @this.call('tambahBarangManual');
+            }
+        } else if (!selectedForm.classList.contains('hidden')) {
+            e.preventDefault();
+            @this.call('tambahItem');
+        }
+    }
+    
+    // Escape to cancel
+    if (e.key === 'Escape') {
+        const manualForm = document.getElementById('manualInputForm');
+        const selectedForm = document.getElementById('selectedItemForm');
+        
+        if (!manualForm.classList.contains('hidden')) {
+            toggleManualInput();
+        } else if (!selectedForm.classList.contains('hidden')) {
+            resetForm();
+        }
+    }
+});
+
+// SINGLE Livewire event listener - Gunakan yang terbaru
+document.addEventListener('livewire:init', () => {
+    console.log('Livewire initialized');
+    
+    // Regular item added
+    Livewire.on('item-added', () => {
+        const form = document.getElementById('selectedItemForm');
+        if (form) {
+            form.classList.add('hidden');
+        }
+        showNotification('Item Ditambahkan!', 'Berhasil ditambahkan ke keranjang', 'success');
+        
+        // Add pulse effect to cart
+        const cartSection = document.querySelector('.w-\\[420px\\]');
+        if (cartSection) {
+            cartSection.style.animation = 'pulse 0.6s ease-in-out';
+        }
+    });
+    
+    // Manual item added
+    Livewire.on('manual-item-added', () => {
+        console.log('Manual item added event received');
+        showNotification('Barang Manual Ditambahkan!', 'Item berhasil ditambahkan ke keranjang', 'success');
+    });
+    
+    // Hide manual form
+    Livewire.on('hide-manual-form', () => {
+        console.log('Hide manual form event received');
+        const form = document.getElementById('manualInputForm');
+        if (form) {
+            form.classList.add('hidden');
+        }
+    });
+    
+    // Manual form reset - HAPUS force clear, biarkan Livewire yang handle
+    Livewire.on('manual-form-reset', () => {
+        console.log('Manual form reset event received');
+        // Tidak perlu force clear lagi, Livewire sudah handle
+    });
+    
+    // Error handling
+    Livewire.on('manual-item-error', (message) => {
+        console.error('Manual item error:', message);
+        showNotification('Error!', message, 'error');
+    });
+    
+    // Form reset for regular items
+    Livewire.on('form-reset', () => {
+        const form = document.getElementById('selectedItemForm');
+        if (form) {
+            form.classList.add('hidden');
+        }
+    });
+});
 </script>
 
 {{-- <style>

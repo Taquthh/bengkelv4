@@ -18,7 +18,7 @@
                             </div>
                             Riwayat Transaksi Penjualan
                         </h1>
-                        <p class="text-blue-100 mt-1">Kelola dan monitor seluruh transaksi penjualan</p>
+                        <p class="text-blue-100 mt-1">Kelola dan monitor seluruh transaksi penjualan (regular & manual)</p>
                     </div>
                 </div>
             </div>
@@ -112,7 +112,7 @@
                             <input type="text" 
                                    wire:model.live.debounce.300ms="search" 
                                    class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                                   placeholder="Cari kasir, keterangan, atau barang...">
+                                   placeholder="Cari kasir, keterangan, barang (regular/manual)...">
                         </div>
                     </div>
 
@@ -282,14 +282,26 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex flex-col">
-                                        <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800 w-fit">
-                                            {{ $transaksi->itemPenjualan->count() }} item(s)
-                                        </span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800 w-fit">
+                                                {{ $transaksi->itemPenjualan->count() }} item(s)
+                                            </span>
+                                            @if($transaksi->itemPenjualan->where('is_manual', true)->count() > 0)
+                                                <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-orange-100 text-orange-800 w-fit">
+                                                    {{ $transaksi->itemPenjualan->where('is_manual', true)->count() }} manual
+                                                </span>
+                                            @endif
+                                        </div>
                                         <div class="mt-2 space-y-1">
                                             @foreach($transaksi->itemPenjualan->take(2) as $item)
                                                 <div class="text-xs text-slate-600 flex items-center gap-1">
                                                     <div class="w-1 h-1 bg-slate-400 rounded-full"></div>
-                                                    {{ $item->barang->nama }} ({{ $item->jumlah }})
+                                                    @if($item->is_manual || $item->nama_barang_manual)
+                                                        <span class="text-orange-600 font-medium">[M]</span>
+                                                        {{ $item->nama_barang_manual }} ({{ $item->jumlah }})
+                                                    @else
+                                                        {{ $item->barang->nama }} ({{ $item->jumlah }})
+                                                    @endif
                                                 </div>
                                             @endforeach
                                             @if($transaksi->itemPenjualan->count() > 2)
@@ -320,8 +332,15 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                             </svg>
                                         </button>
+                                        {{-- <button wire:click="editTransaksi({{ $transaksi->id }})" 
+                                                class="p-2 text-amber-600 hover:text-amber-900 hover:bg-amber-50 rounded-lg transition-colors duration-200"
+                                                title="Edit Transaksi">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                            </svg>
+                                        </button> --}}
                                         <button wire:click="hapusTransaksiLangsung({{ $transaksi->id }})" 
-                                                wire:confirm="Yakin hapus transaksi #{{ $transaksi->id }}? Stok akan dikembalikan ke pembelian."
+                                                wire:confirm="Yakin hapus transaksi #{{ $transaksi->id }}? Stok barang reguler akan dikembalikan."
                                                 wire:loading.attr="disabled"
                                                 wire:loading.class="opacity-50 cursor-not-allowed"
                                                 class="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition-colors duration-200"
@@ -457,6 +476,14 @@
                                             {{ collect($detailItems)->sum('jumlah') }} unit
                                         </span>
                                     </div>
+                                    @if(collect($detailItems)->where('is_manual', true)->count() > 0)
+                                        <div class="flex justify-between items-center pt-2 border-t border-emerald-200">
+                                            <span class="text-orange-700 text-sm">Item Manual:</span>
+                                            <span class="text-sm font-semibold text-orange-800">
+                                                {{ collect($detailItems)->where('is_manual', true)->count() }} item
+                                            </span>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -467,7 +494,7 @@
                                 <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                                 </svg>
-                                Detail Barang
+                                Detail Barang (Regular & Manual)
                             </h4>
                             
                             <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -475,6 +502,7 @@
                                     <table class="w-full">
                                         <thead class="bg-slate-50">
                                             <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Type</th>
                                                 <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Barang</th>
                                                 <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Qty</th>
                                                 <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Harga Jual</th>
@@ -489,11 +517,25 @@
                                             @foreach($detailItems as $item)
                                                 <tr class="hover:bg-slate-50 transition-colors duration-150">
                                                     <td class="px-4 py-4">
+                                                        @if($item['is_manual'])
+                                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                                                MANUAL
+                                                            </span>
+                                                        @else
+                                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                                REGULAR
+                                                            </span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="px-4 py-4">
                                                         <div class="text-sm font-medium text-slate-900">{{ $item['barang_nama'] }}</div>
+                                                        @if($item['is_manual'] && $item['keterangan'])
+                                                            <div class="text-xs text-slate-500">{{ $item['keterangan'] }}</div>
+                                                        @endif
                                                     </td>
                                                     <td class="px-4 py-4 text-center">
-                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                            {{ $item['jumlah'] }}
+                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $item['is_manual'] ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800' }}">
+                                                            {{ $item['jumlah'] }} {{ $item['satuan'] ?? 'pcs' }}
                                                         </span>
                                                     </td>
                                                     <td class="px-4 py-4 text-right text-sm text-slate-900">
@@ -523,7 +565,7 @@
                                         </tbody>
                                         <tfoot class="bg-slate-50">
                                             <tr>
-                                                <th colspan="3" class="px-4 py-3 text-right text-sm font-semibold text-slate-900">Total:</th>
+                                                <th colspan="4" class="px-4 py-3 text-right text-sm font-semibold text-slate-900">Total:</th>
                                                 <th class="px-4 py-3 text-right text-sm font-bold text-slate-900">
                                                     Rp {{ number_format(collect($detailItems)->sum('subtotal'), 0, ',', '.') }}
                                                 </th>
@@ -604,21 +646,28 @@
                             <td class="py-2 font-medium text-slate-700">Total Profit:</td>
                             <td class="py-2 text-slate-900 font-semibold">Rp {{ number_format(collect($detailItems)->sum('profit'), 0, ',', '.') }}</td>
                         </tr>
-                        <tr>
+                        <tr class="border-b border-slate-100">
                             <td class="py-2 font-medium text-slate-700">Jumlah Item:</td>
                             <td class="py-2 text-slate-900">{{ collect($detailItems)->sum('jumlah') }} unit</td>
                         </tr>
+                        @if(collect($detailItems)->where('is_manual', true)->count() > 0)
+                            <tr>
+                                <td class="py-2 font-medium text-slate-700">Item Manual:</td>
+                                <td class="py-2 text-slate-900 text-orange-700">{{ collect($detailItems)->where('is_manual', true)->count() }} item</td>
+                            </tr>
+                        @endif
                     </table>
                 </div>
             </div>
 
             {{-- Print Detail Items --}}
             <div>
-                <h3 class="text-lg font-semibold text-slate-900 mb-4 border-b border-slate-200 pb-2">Detail Barang</h3>
+                <h3 class="text-lg font-semibold text-slate-900 mb-4 border-b border-slate-200 pb-2">Detail Barang (Regular & Manual)</h3>
                 
                 <table class="w-full border-collapse border border-slate-300 text-sm">
                     <thead>
                         <tr class="bg-slate-100">
+                            <th class="border border-slate-300 px-3 py-2 text-left font-semibold">Type</th>
                             <th class="border border-slate-300 px-3 py-2 text-left font-semibold">Barang</th>
                             <th class="border border-slate-300 px-3 py-2 text-center font-semibold">Qty</th>
                             <th class="border border-slate-300 px-3 py-2 text-right font-semibold">Harga Jual</th>
@@ -632,8 +681,11 @@
                     <tbody>
                         @foreach($detailItems as $item)
                             <tr class="border-b border-slate-200">
+                                <td class="border border-slate-300 px-3 py-2">
+                                    {{ $item['is_manual'] ? 'MANUAL' : 'REGULAR' }}
+                                </td>
                                 <td class="border border-slate-300 px-3 py-2">{{ $item['barang_nama'] }}</td>
-                                <td class="border border-slate-300 px-3 py-2 text-center">{{ $item['jumlah'] }}</td>
+                                <td class="border border-slate-300 px-3 py-2 text-center">{{ $item['jumlah'] }} {{ $item['satuan'] ?? 'pcs' }}</td>
                                 <td class="border border-slate-300 px-3 py-2 text-right">Rp {{ number_format($item['harga_jual'], 0, ',', '.') }}</td>
                                 <td class="border border-slate-300 px-3 py-2 text-right font-bold">Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</td>
                                 <td class="border border-slate-300 px-3 py-2 text-right">Rp {{ number_format($item['harga_beli'], 0, ',', '.') }}</td>
@@ -647,7 +699,7 @@
                     </tbody>
                     <tfoot>
                         <tr class="bg-slate-100 font-bold">
-                            <td colspan="3" class="border border-slate-300 px-3 py-2 text-right">TOTAL:</td>
+                            <td colspan="4" class="border border-slate-300 px-3 py-2 text-right">TOTAL:</td>
                             <td class="border border-slate-300 px-3 py-2 text-right">Rp {{ number_format(collect($detailItems)->sum('subtotal'), 0, ',', '.') }}</td>
                             <td class="border border-slate-300 px-3 py-2"></td>
                             <td class="border border-slate-300 px-3 py-2 text-right {{ collect($detailItems)->sum('profit') >= 0 ? 'text-green-700' : 'text-red-700' }}">
@@ -662,7 +714,7 @@
             {{-- Print Footer --}}
             <div class="mt-8 pt-6 border-t border-slate-300 text-center text-sm text-slate-600">
                 <p>Dicetak pada: {{ now()->format('d F Y, H:i:s') }}</p>
-                <p class="mt-1">Sistem Manajemen Penjualan</p>
+                <p class="mt-1">Sistem Manajemen Penjualan (Regular & Manual Items)</p>
             </div>
         </div>
     @endif
@@ -723,20 +775,18 @@
         // Confirmation dialog for delete
         Livewire.on('confirm-delete', (event) => {
             const data = event;
-            if (confirm(`${data.text}\n\nPeringatan: Aksi ini akan mengembalikan stok barang ke pembelian.`)) {
+            if (confirm(`${data.text}\n\nPeringatan: Stok barang reguler akan dikembalikan, item manual tidak berpengaruh pada stok.`)) {
                 @this.call('hapusTransaksi', data.transaksiId);
             }
         });
 
         // Listen for refresh events
         Livewire.on('refresh-component', () => {
-            // Force re-render component
             @this.$refresh();
         });
 
         // Listen for transaction deleted event
         Livewire.on('transaksi-deleted', (event) => {
-            // Remove row animation (optional)
             const row = document.querySelector(`[data-transaksi-id="${event.transaksiId}"]`);
             if (row) {
                 row.style.opacity = '0.5';
@@ -745,7 +795,6 @@
                     @this.$refresh();
                 }, 300);
             } else {
-                // Fallback refresh
                 setTimeout(() => {
                     @this.$refresh();
                 }, 100);
@@ -755,17 +804,14 @@
 
     // Enhanced Print Function
     function printDetailTransaksi() {
-        // Hide modal backdrop and show print content
         const modal = document.querySelector('.fixed.inset-0.z-50');
         const printContent = document.getElementById('print-content');
         
         if (modal) modal.style.display = 'none';
         if (printContent) printContent.classList.remove('hidden');
         
-        // Print with callback
         window.print();
         
-        // Restore modal after print
         setTimeout(() => {
             if (modal) modal.style.display = 'flex';
             if (printContent) printContent.classList.add('hidden');
@@ -774,25 +820,20 @@
 
     // Handle print events
     window.addEventListener('beforeprint', function() {
-        // Ensure print content is visible
         const printContent = document.getElementById('print-content');
         if (printContent) {
             printContent.classList.remove('hidden');
             printContent.style.display = 'block';
         }
-        
-        // Hide everything else
         document.body.classList.add('printing');
     });
 
     window.addEventListener('afterprint', function() {
-        // Restore normal view
         const printContent = document.getElementById('print-content');
         if (printContent) {
             printContent.classList.add('hidden');
             printContent.style.display = 'none';
         }
-        
         document.body.classList.remove('printing');
     });
     
@@ -809,11 +850,4 @@
             }, 5000);
         });
     });
-
-    // Force refresh on window focus (backup solution)
-    window.addEventListener('focus', function() {
-        // Optional: refresh when user comes back to tab
-        // @this.$refresh();
-    });
 </script>
-

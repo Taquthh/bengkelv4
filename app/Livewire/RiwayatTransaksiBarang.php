@@ -48,7 +48,6 @@ class RiwayatTransaksiBarang extends Component
         $this->resetPage();
     }
 
-
     public function mount()
     {
         // Set default tanggal ke bulan ini
@@ -82,6 +81,9 @@ class RiwayatTransaksiBarang extends Component
                   ->orWhereHas('itemPenjualan.barang', function($subQ) {
                       $subQ->where('nama', 'like', '%' . $this->search . '%')
                            ->orWhere('merk', 'like', '%' . $this->search . '%');
+                  })
+                  ->orWhereHas('itemPenjualan', function($subQ) {
+                      $subQ->where('nama_barang_manual', 'like', '%' . $this->search . '%');
                   });
             });
         }
@@ -193,20 +195,59 @@ class RiwayatTransaksiBarang extends Component
         
         if ($this->selectedTransaksi) {
             $this->detailItems = $this->selectedTransaksi->itemPenjualan->map(function($item) {
-                return [
-                    'barang_nama' => $item->barang->nama_lengkap,
-                    'jumlah' => $item->jumlah,
-                    'harga_jual' => $item->harga_jual,
-                    'subtotal' => $item->subtotal,
-                    'harga_beli' => $item->pembelian->harga_beli ?? 0,
-                    'profit' => $item->profit,
-                    'profit_margin' => $item->profit_margin,
-                    'supplier' => $item->pembelian->supplier ?? '-',
-                ];
+                // Check if this is a manual item
+                if ($item->is_manual || $item->nama_barang_manual) {
+                    return [
+                        'barang_nama' => $item->nama_barang_manual,
+                        'jumlah' => $item->jumlah,
+                        'satuan' => $item->satuan ?? 'pcs',
+                        'harga_jual' => $item->harga_jual,
+                        'subtotal' => $item->subtotal,
+                        'harga_beli' => $item->harga_beli_manual ?? 0,
+                        'profit' => $this->hitungProfitManual($item),
+                        'profit_margin' => $this->hitungProfitMarginManual($item),
+                        'supplier' => 'MANUAL',
+                        'is_manual' => true,
+                        'keterangan' => $item->keterangan ?? '',
+                    ];
+                } else {
+                    // Regular item
+                    return [
+                        'barang_nama' => $item->barang->nama_lengkap ?? $item->barang->nama ?? 'N/A',
+                        'jumlah' => $item->jumlah,
+                        'satuan' => $item->barang->satuan ?? 'pcs',
+                        'harga_jual' => $item->harga_jual,
+                        'subtotal' => $item->subtotal,
+                        'harga_beli' => $item->pembelian->harga_beli ?? 0,
+                        'profit' => $item->profit,
+                        'profit_margin' => $item->profit_margin,
+                        'supplier' => $item->pembelian->supplier ?? '-',
+                        'is_manual' => false,
+                        'keterangan' => '',
+                    ];
+                }
             })->toArray();
             
             $this->showDetailModal = true;
         }
+    }
+
+    private function hitungProfitManual($item)
+    {
+        $hargaBeli = $item->harga_beli_manual ?? 0;
+        return ($item->harga_jual - $hargaBeli) * $item->jumlah;
+    }
+
+    private function hitungProfitMarginManual($item)
+    {
+        $hargaBeli = $item->harga_beli_manual ?? 0;
+        
+        if ($hargaBeli <= 0) {
+            return 100; // 100% profit if no cost
+        }
+        
+        $profitPerUnit = $item->harga_jual - $hargaBeli;
+        return round(($profitPerUnit / $hargaBeli) * 100, 2);
     }
 
     public function tutupDetail()
@@ -229,6 +270,9 @@ class RiwayatTransaksiBarang extends Component
                 ->orWhereHas('itemPenjualan.barang', function($subQ) {
                     $subQ->where('nama', 'like', '%' . $this->search . '%')
                         ->orWhere('merk', 'like', '%' . $this->search . '%');
+                })
+                ->orWhereHas('itemPenjualan', function($subQ) {
+                    $subQ->where('nama_barang_manual', 'like', '%' . $this->search . '%');
                 });
             });
         }
@@ -247,80 +291,28 @@ class RiwayatTransaksiBarang extends Component
         $this->totalTransaksi = $query->count();
         $this->totalPenjualan = $query->sum('total_harga');
         
-        // PERBAIKAN: Hitung total profit dengan JOIN yang efisien
+        // Hitung total profit untuk regular dan manual items
         $transaksiIds = $query->pluck('id');
         
         if ($transaksiIds->isNotEmpty()) {
-            $this->totalProfit = DB::table('penjualan_items as pi')
+            // Profit dari regular items
+            $regularProfit = DB::table('penjualan_items as pi')
                 ->join('pembelians as p', 'pi.pembelian_id', '=', 'p.id')
                 ->whereIn('pi.penjualan_id', $transaksiIds)
+                ->where('pi.is_manual', false)
                 ->selectRaw('SUM((pi.harga_jual - p.harga_beli) * pi.jumlah) as total_profit')
                 ->value('total_profit') ?? 0;
+
+            // Profit dari manual items
+            $manualProfit = DB::table('penjualan_items as pi')
+                ->whereIn('pi.penjualan_id', $transaksiIds)
+                ->where('pi.is_manual', true)
+                ->selectRaw('SUM((pi.harga_jual - COALESCE(pi.harga_beli_manual, 0)) * pi.jumlah) as total_profit')
+                ->value('total_profit') ?? 0;
+
+            $this->totalProfit = $regularProfit + $manualProfit;
         } else {
             $this->totalProfit = 0;
-        }
-    }
-
-    // TAMBAHAN: Method untuk menghitung profit per transaksi (opsional)
-    public function hitungProfitPerTransaksi($transaksiId)
-    {
-        return DB::table('penjualan_items as pi')
-            ->join('pembelians as p', 'pi.pembelian_id', '=', 'p.id')
-            ->where('pi.penjualan_id', $transaksiId)
-            ->selectRaw('SUM((pi.harga_jual - p.harga_beli) * pi.jumlah) as profit')
-            ->value('profit') ?? 0;
-    }
-
-    public function hapusTransaksi($transaksiId)
-    {
-        try {
-            DB::beginTransaction();
-            
-            $transaksi = Transaksi::with(['itemPenjualan.pembelian'])->find($transaksiId);
-            
-            if (!$transaksi) {
-                $this->addError('general', 'Transaksi tidak ditemukan.');
-                DB::rollBack();
-                return;
-            }
-
-            // Kembalikan stok ke pembelian (reverse FIFO process)
-            foreach ($transaksi->itemPenjualan as $item) {
-                if ($item->pembelian) {
-                    // Kembalikan jumlah yang diambil ke stok tersisa
-                    $item->pembelian->jumlah_tersisa += $item->jumlah;
-                    $item->pembelian->save();
-                }
-            }
-
-            // Hapus semua item penjualan terkait
-            $transaksi->itemPenjualan()->delete();
-            
-            // Hapus transaksi utama
-            $transaksi->delete();
-
-            DB::commit();
-
-            session()->flash('message', 
-                'Transaksi #' . $transaksiId . ' berhasil dihapus dan stok telah dikembalikan.'
-            );
-            
-            // Force refresh component dengan multiple dispatch
-            $this->hitungSummary();
-            $this->resetPage();
-            
-            // Dispatch refresh event untuk memastikan UI ter-update
-            $this->dispatch('refresh-component');
-            $this->dispatch('transaksi-deleted', transaksiId: $transaksiId);
-            
-        } catch (\Exception $e) {
-            DB::rollBack();
-            $this->addError('general', 'Terjadi kesalahan saat menghapus transaksi: ' . $e->getMessage());
-            \Log::error('Error in hapusTransaksi: ' . $e->getMessage(), [
-                'transaksi_id' => $transaksiId,
-                'user_id' => auth()->id(),
-                'trace' => $e->getTraceAsString()
-            ]);
         }
     }
 
@@ -337,12 +329,13 @@ class RiwayatTransaksiBarang extends Component
                 return;
             }
 
-            // Kembalikan stok ke pembelian
+            // Kembalikan stok ke pembelian (hanya untuk regular items, bukan manual items)
             foreach ($transaksi->itemPenjualan as $item) {
-                if ($item->pembelian) {
+                if (!$item->is_manual && $item->pembelian) {
                     $item->pembelian->jumlah_tersisa += $item->jumlah;
                     $item->pembelian->save();
                 }
+                // Manual items tidak perlu dikembalikan ke stok
             }
 
             // Hapus item penjualan
@@ -381,21 +374,7 @@ class RiwayatTransaksiBarang extends Component
         $this->dispatch('confirm-delete', 
             transaksiId: $transaksiId,
             title: 'Konfirmasi Hapus',
-            text: 'Apakah Anda yakin ingin menghapus transaksi ini? Stok akan dikembalikan.'
+            text: 'Apakah Anda yakin ingin menghapus transaksi ini? Stok barang reguler akan dikembalikan.'
         );
-    }
-
-    public function exportData()
-    {
-        // Logic untuk export data (CSV/Excel)
-        // Implementasi sesuai kebutuhan
-        session()->flash('message', 'Fitur export akan segera tersedia.');
-    }
-
-    public function cetakLaporan()
-    {
-        // Logic untuk cetak laporan
-        // Implementasi sesuai kebutuhan
-        session()->flash('message', 'Fitur cetak laporan akan segera tersedia.');
     }
 }

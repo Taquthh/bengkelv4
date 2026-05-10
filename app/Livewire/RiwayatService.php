@@ -2359,7 +2359,7 @@ public function showDetail($transactionId)
             ]);
 
             $this->closeModal();
-            $this->loadAvailableBarangs(); // Refresh stock data
+            $this->loadAvailableBarangs(); //
             
             $this->dispatch('items-added', [
                 'invoice' => $transaction->invoice,

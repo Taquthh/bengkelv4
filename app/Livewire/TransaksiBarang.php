@@ -214,35 +214,43 @@ class TransaksiBarang extends Component
         ]);
 
         try {
+            // SIMPAN data ke variable lokal SEBELUM reset
+            $namaBarang = $this->nama_barang_manual;
+            $jumlahBarang = $this->jumlah_manual;
+            $satuanBarang = $this->satuan_manual;
+            $hargaJual = $this->harga_jual_manual;
+            $hargaBeli = $this->harga_beli_manual;
+            $keterangan = $this->keterangan_manual ?? '';
+            
             // Generate unique temporary ID for manual items
             $tempId = 'manual_' . uniqid() . '_' . time();
             
             // Check if manual item with same name already exists
-            $existingIndex = collect($this->items)->search(function($item) {
+            $existingIndex = collect($this->items)->search(function($item) use ($namaBarang) {
                 return isset($item['is_manual']) && $item['is_manual'] && 
-                    strtolower($item['nama']) === strtolower($this->nama_barang_manual);
+                    strtolower($item['nama']) === strtolower($namaBarang);
             });
 
             if ($existingIndex !== false) {
                 // Update existing manual item
-                $this->items[$existingIndex]['jumlah'] += $this->jumlah_manual;
-                $this->items[$existingIndex]['harga_jual'] = $this->harga_jual_manual;
-                $this->items[$existingIndex]['harga_beli_manual'] = $this->harga_beli_manual;
-                $this->items[$existingIndex]['subtotal'] = $this->items[$existingIndex]['jumlah'] * $this->harga_jual_manual;
-                $this->items[$existingIndex]['keterangan'] = $this->keterangan_manual ?? '';
+                $this->items[$existingIndex]['jumlah'] += $jumlahBarang;
+                $this->items[$existingIndex]['harga_jual'] = $hargaJual;
+                $this->items[$existingIndex]['harga_beli_manual'] = $hargaBeli;
+                $this->items[$existingIndex]['subtotal'] = $this->items[$existingIndex]['jumlah'] * $hargaJual;
+                $this->items[$existingIndex]['keterangan'] = $keterangan;
                 
                 $message = 'Barang manual berhasil diperbarui!';
             } else {
                 // Add new manual item
                 $this->items[] = [
                     'barang_id' => $tempId, // Temporary ID
-                    'nama' => $this->nama_barang_manual,
-                    'jumlah' => $this->jumlah_manual,
-                    'satuan' => $this->satuan_manual,
-                    'harga_jual' => $this->harga_jual_manual,
-                    'harga_beli_manual' => $this->harga_beli_manual,
-                    'subtotal' => $this->jumlah_manual * $this->harga_jual_manual,
-                    'keterangan' => $this->keterangan_manual ?? '',
+                    'nama' => $namaBarang,
+                    'jumlah' => $jumlahBarang,
+                    'satuan' => $satuanBarang,
+                    'harga_jual' => $hargaJual,
+                    'harga_beli_manual' => $hargaBeli,
+                    'subtotal' => $jumlahBarang * $hargaJual,
+                    'keterangan' => $keterangan,
                     'is_manual' => true,
                     'stok_tersedia' => 'MANUAL',
                     'tanggal' => now()->toDateString(),
@@ -251,7 +259,14 @@ class TransaksiBarang extends Component
                 $message = 'Barang manual berhasil ditambahkan!';
             }
 
-            // Reset form SEBELUM emit events
+            // Log SEBELUM reset (menggunakan variable lokal)
+            Log::info('Manual item added successfully', [
+                'nama' => $namaBarang,
+                'jumlah' => $jumlahBarang,
+                'total_items' => count($this->items)
+            ]);
+
+            // Reset form SETELAH data tersimpan
             $this->resetManualInputs();
             
             // Set flash message
@@ -260,12 +275,6 @@ class TransaksiBarang extends Component
             // Emit success events
             $this->dispatch('manual-item-added');
             $this->dispatch('hide-manual-form');
-            
-            Log::info('Manual item added successfully', [
-                'nama' => $this->nama_barang_manual,
-                'jumlah' => $this->jumlah_manual,
-                'total_items' => count($this->items)
-            ]);
             
         } catch (\Exception $e) {
             Log::error('Error adding manual item: ' . $e->getMessage());
@@ -453,7 +462,8 @@ class TransaksiBarang extends Component
                     $itemName = $item['nama'] ?? "Item ke-{$index}";
                     Log::error('Error processing item', [
                         'item_name' => $itemName,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
                     ]);
                     throw new \Exception("Gagal memproses item: {$itemName} - {$e->getMessage()}");
                 }
@@ -472,32 +482,57 @@ class TransaksiBarang extends Component
         } catch (\Exception $e) {
             DB::rollBack();
             $this->addError('general', 'Terjadi kesalahan: ' . $e->getMessage());
-            Log::error('Error in simpanPenjualan: ' . $e->getMessage());
+            Log::error('Error in simpanPenjualan: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
         }
     }
 
-    private function prosesItemManual($penjualanId, $item)
+    private function prosesItemManual($transaksiId, $item)
     {
-        // Create manual item record
-        // You'll need to modify your PenjualanItem model/table to support manual items
-        // or create a separate table for manual items
-        PenjualanItem::create([
-            'penjualan_id' => $penjualanId,
-            'barang_id' => null, // No barang_id for manual items
-            'pembelian_id' => null, // No pembelian_id for manual items
-            'nama_barang_manual' => $item['nama'],
-            'jumlah' => $item['jumlah'],
-            'satuan' => $item['satuan'],
-            'harga_jual' => $item['harga_jual'],
-            'harga_beli_manual' => $item['harga_beli_manual'],
-            'keterangan' => $item['keterangan'] ?? null,
-            'is_manual' => true,
-        ]);
+        try {
+            Log::info('Processing manual item', [
+                'transaksi_id' => $transaksiId,
+                'item' => $item
+            ]);
 
-        Log::info('Manual item processed', ['nama' => $item['nama']]);
+            // Prepare data untuk insert
+            $data = [
+                'penjualan_id' => $transaksiId, // Pastikan ini sesuai dengan kolom di tabel
+                'barang_id' => null, // Explicitly set to null
+                'pembelian_id' => null, // Explicitly set to null
+                'nama_barang_manual' => $item['nama'],
+                'jumlah' => $item['jumlah'],
+                'satuan' => $item['satuan'] ?? 'pcs',
+                'harga_jual' => $item['harga_jual'],
+                'harga_beli_manual' => $item['harga_beli_manual'],
+                'keterangan' => $item['keterangan'] ?? null,
+                'is_manual' => true,
+            ];
+
+            Log::info('Creating PenjualanItem with data', $data);
+
+            // Create manual item record
+            $penjualanItem = PenjualanItem::create($data);
+
+            Log::info('Manual item created successfully', [
+                'id' => $penjualanItem->id,
+                'nama' => $item['nama']
+            ]);
+
+            return $penjualanItem;
+
+        } catch (\Exception $e) {
+            Log::error('Error in prosesItemManual', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'item' => $item
+            ]);
+            throw $e;
+        }
     }
 
-    private function prosesItemPenjualan($penjualanId, $item)
+    private function prosesItemPenjualan($transaksiId, $item)
     {
         $jumlahDibutuhkan = $item['jumlah'];
         $harga = $item['harga_jual'];
@@ -518,7 +553,7 @@ class TransaksiBarang extends Component
 
             // Create sale item record
             PenjualanItem::create([
-                'penjualan_id' => $penjualanId,
+                'penjualan_id' => $transaksiId,
                 'pembelian_id' => $pembelian->id,
                 'barang_id' => $barang_id,
                 'nama_barang_manual' => null,
