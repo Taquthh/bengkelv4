@@ -53,7 +53,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('service.invoice.print');
 
 
-    Route::middleware(['auth', 'role:keuangan,'])->group(function () {
+    Route::middleware(['auth', 'role:keuangan,owner'])->group(function () {
         Route::get('/laporan-mingguan', LaporanMingguan::class)->name('laporan.mingguan');
         Route::get('/laporan-bulanan', LaporanBulanan::class)->name('laporan.bulanan');
         Route::get('/laporan-sparepart', LaporanSparepart::class)->name('laporan.keuangan');

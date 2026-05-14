@@ -1,8 +1,52 @@
-@push('styles')
-<link rel="stylesheet" href="{{ asset('css/print-detail-transaksi-barang.css') }}">
-@endpush
-
 <div class="mt-16 bg-gradient-to-br from-slate-50 to-slate-100 p-4 lg:p-6">
+
+    {{-- Toast Notifications --}}
+    @if (session()->has('message'))
+        <div class="fixed top-4 right-4 z-50" id="success-toast">
+            <div class="bg-white rounded-lg shadow-lg border border-emerald-200 p-4 flex items-center gap-3 max-w-sm">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-slate-900">Sukses!</p>
+                    <p class="text-sm text-slate-600">{{ session('message') }}</p>
+                </div>
+                <button onclick="document.getElementById('success-toast').remove()" class="flex-shrink-0 text-slate-400 hover:text-slate-600">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    @endif
+
+    @if (session()->has('error'))
+        <div class="fixed top-4 right-4 z-50" id="error-toast">
+            <div class="bg-white rounded-lg shadow-lg border border-red-200 p-4 flex items-center gap-3 max-w-sm">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-slate-900">Error!</p>
+                    <p class="text-sm text-slate-600">{{ session('error') }}</p>
+                </div>
+                <button onclick="document.getElementById('error-toast').remove()" class="flex-shrink-0 text-slate-400 hover:text-slate-600">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    @endif
+
     {{-- Header Section --}}
     <div class="mb-8">
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
@@ -16,7 +60,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
                             </div>
-                            Riwayat Transaksi Penjualan
+                            Riwayat Transaksi Penjualan Barang
                         </h1>
                         <p class="text-blue-100 mt-1">Kelola dan monitor seluruh transaksi penjualan (regular & manual)</p>
                     </div>
@@ -26,6 +70,7 @@
             {{-- Summary Cards --}}
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    {{-- Total Transaksi --}}
                     <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200/50">
                         <div class="flex items-center justify-between">
                             <div>
@@ -40,6 +85,7 @@
                         </div>
                     </div>
 
+                    {{-- Total Penjualan --}}
                     <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-4 border border-emerald-200/50">
                         <div class="flex items-center justify-between">
                             <div>
@@ -54,6 +100,7 @@
                         </div>
                     </div>
 
+                    {{-- Total Profit --}}
                     <div class="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-4 border border-amber-200/50">
                         <div class="flex items-center justify-between">
                             <div>
@@ -68,6 +115,7 @@
                         </div>
                     </div>
 
+                    {{-- Rata-rata --}}
                     <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200/50">
                         <div class="flex items-center justify-between">
                             <div>
@@ -85,16 +133,19 @@
 
                 {{-- Quick Filter Buttons --}}
                 <div class="flex flex-wrap gap-2 mb-6">
-                    <button wire:click="setTanggalHariIni" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2">
+                    <button wire:click="setTanggalHariIni"
+                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
                         Hari Ini
                     </button>
-                    <button wire:click="setTanggalMingguIni" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors duration-200">
+                    <button wire:click="setTanggalMingguIni"
+                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors duration-200">
                         Minggu Ini
                     </button>
-                    <button wire:click="setTanggalBulanIni" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors duration-200">
+                    <button wire:click="setTanggalBulanIni"
+                            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-colors duration-200">
                         Bulan Ini
                     </button>
                 </div>
@@ -109,8 +160,8 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                 </svg>
                             </div>
-                            <input type="text" 
-                                   wire:model.live.debounce.300ms="search" 
+                            <input type="text"
+                                   wire:model.live.debounce.300ms="search"
                                    class="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                                    placeholder="Cari kasir, keterangan, barang (regular/manual)...">
                         </div>
@@ -118,21 +169,21 @@
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2">Tanggal Mulai</label>
-                        <input type="date" 
-                               wire:model.live="tanggal_mulai" 
+                        <input type="date"
+                               wire:model.live="tanggal_mulai"
                                class="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2">Tanggal Selesai</label>
-                        <input type="date" 
-                               wire:model.live="tanggal_selesai" 
+                        <input type="date"
+                               wire:model.live="tanggal_selesai"
                                class="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2">Kasir</label>
-                        <select wire:model.live="kasir_filter" 
+                        <select wire:model.live="kasir_filter"
                                 class="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
                             <option value="">Semua Kasir</option>
                             @foreach($kasirList as $kasir)
@@ -143,14 +194,14 @@
 
                     <div class="flex flex-col justify-end">
                         <div class="flex gap-2">
-                            <button wire:click="resetFilter" 
+                            <button wire:click="resetFilter"
                                     class="flex-1 px-4 py-2.5 bg-slate-500 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors duration-200 flex items-center justify-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                                 </svg>
                                 Reset
                             </button>
-                            <select wire:model.live="per_page" 
+                            <select wire:model.live="per_page"
                                     class="px-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
                                 <option value="10">10</option>
                                 <option value="25">25</option>
@@ -171,7 +222,9 @@
                 <table class="w-full">
                     <thead class="bg-slate-50">
                         <tr>
-                            <th wire:click="sortBy('id')" class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors">
+                            {{-- ID --}}
+                            <th wire:click="sortBy('id')"
+                                class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors">
                                 <div class="flex items-center gap-2">
                                     ID
                                     @if($sortBy === 'id')
@@ -189,7 +242,10 @@
                                     @endif
                                 </div>
                             </th>
-                            <th wire:click="sortBy('tanggal')" class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors">
+
+                            {{-- Tanggal --}}
+                            <th wire:click="sortBy('tanggal')"
+                                class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors">
                                 <div class="flex items-center gap-2">
                                     Tanggal
                                     @if($sortBy === 'tanggal')
@@ -207,7 +263,10 @@
                                     @endif
                                 </div>
                             </th>
-                            <th wire:click="sortBy('kasir')" class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors">
+
+                            {{-- Kasir --}}
+                            <th wire:click="sortBy('kasir')"
+                                class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors">
                                 <div class="flex items-center gap-2">
                                     Kasir
                                     @if($sortBy === 'kasir')
@@ -225,8 +284,12 @@
                                     @endif
                                 </div>
                             </th>
+
                             <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Items</th>
-                            <th wire:click="sortBy('total_harga')" class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors">
+
+                            {{-- Total --}}
+                            <th wire:click="sortBy('total_harga')"
+                                class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors">
                                 <div class="flex items-center gap-2">
                                     Total
                                     @if($sortBy === 'total_harga')
@@ -244,28 +307,37 @@
                                     @endif
                                 </div>
                             </th>
+
                             <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Keterangan</th>
                             <th class="px-6 py-4 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-slate-200">
                         @foreach($transaksis as $transaksi)
-                            <tr class="hover:bg-slate-50 transition-colors duration-150" data-transaksi-id="{{ $transaksi->id }}" wire:key="transaksi-{{ $transaksi->id }}">
+                            <tr class="hover:bg-slate-50 transition-colors duration-150"
+                                data-transaksi-id="{{ $transaksi->id }}"
+                                wire:key="transaksi-{{ $transaksi->id }}">
+
+                                {{-- ID --}}
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                         #{{ $transaksi->id }}
                                     </span>
                                 </td>
+
+                                {{-- Tanggal --}}
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex flex-col">
                                         <div class="text-sm font-medium text-slate-900">
-                                            {{ $transaksi->tanggal->format('d/m/Y') }}
+                                            {{ \Carbon\Carbon::parse($transaksi->tanggal)->format('d/m/Y') }}
                                         </div>
-                                        <div class="text-sm text-slate-500">
-                                            {{ $transaksi->created_at->format('H:i') }}
+                                        <div class="text-xs text-slate-500">
+                                            {{ \Carbon\Carbon::parse($transaksi->created_at)->format('H:i') }}
                                         </div>
                                     </div>
                                 </td>
+
+                                {{-- Kasir --}}
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-8 w-8">
@@ -280,6 +352,8 @@
                                         </div>
                                     </div>
                                 </td>
+
+                                {{-- Items --}}
                                 <td class="px-6 py-4">
                                     <div class="flex flex-col">
                                         <div class="flex items-center gap-2">
@@ -300,7 +374,7 @@
                                                         <span class="text-orange-600 font-medium">[M]</span>
                                                         {{ $item->nama_barang_manual }} ({{ $item->jumlah }})
                                                     @else
-                                                        {{ $item->barang->nama }} ({{ $item->jumlah }})
+                                                        {{ optional($item->barang)->nama ?? 'N/A' }} ({{ $item->jumlah }})
                                                     @endif
                                                 </div>
                                             @endforeach
@@ -312,19 +386,25 @@
                                         </div>
                                     </div>
                                 </td>
+
+                                {{-- Total --}}
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-bold text-emerald-600">
                                         Rp {{ number_format($transaksi->total_harga, 0, ',', '.') }}
                                     </div>
                                 </td>
+
+                                {{-- Keterangan --}}
                                 <td class="px-6 py-4">
                                     <div class="text-sm text-slate-600 max-w-xs truncate">
                                         {{ $transaksi->keterangan ?: '-' }}
                                     </div>
                                 </td>
+
+                                {{-- Aksi --}}
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                     <div class="flex items-center justify-center gap-2">
-                                        <button wire:click="lihatDetail({{ $transaksi->id }})" 
+                                        <button wire:click="lihatDetail({{ $transaksi->id }})"
                                                 class="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition-colors duration-200"
                                                 title="Lihat Detail">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -332,14 +412,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                             </svg>
                                         </button>
-                                        {{-- <button wire:click="editTransaksi({{ $transaksi->id }})" 
-                                                class="p-2 text-amber-600 hover:text-amber-900 hover:bg-amber-50 rounded-lg transition-colors duration-200"
-                                                title="Edit Transaksi">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                            </svg>
-                                        </button> --}}
-                                        <button wire:click="hapusTransaksiLangsung({{ $transaksi->id }})" 
+                                        <button wire:click="hapusTransaksiLangsung({{ $transaksi->id }})"
                                                 wire:confirm="Yakin hapus transaksi #{{ $transaksi->id }}? Stok barang reguler akan dikembalikan."
                                                 wire:loading.attr="disabled"
                                                 wire:loading.class="opacity-50 cursor-not-allowed"
@@ -365,7 +438,7 @@
             <div class="bg-slate-50 px-6 py-4 border-t border-slate-200">
                 <div class="flex items-center justify-between">
                     <div class="text-sm text-slate-700">
-                        Menampilkan {{ $transaksis->firstItem() }} - {{ $transaksis->lastItem() }} 
+                        Menampilkan {{ $transaksis->firstItem() }} - {{ $transaksis->lastItem() }}
                         dari {{ $transaksis->total() }} transaksi
                     </div>
                     <div>
@@ -382,7 +455,8 @@
                 </div>
                 <h3 class="text-xl font-medium text-slate-900 mb-2">Tidak ada transaksi ditemukan</h3>
                 <p class="text-slate-600 mb-6">Coba ubah filter pencarian atau tambahkan transaksi baru</p>
-                <button wire:click="resetFilter" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200">
+                <button wire:click="resetFilter"
+                        class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200">
                     Reset Filter
                 </button>
             </div>
@@ -391,7 +465,7 @@
 
     {{-- Modal Detail Transaksi --}}
     @if($showDetailModal && $selectedTransaksi)
-        <div class="fixed inset-0 z-50 overflow-y-auto" style="background-color: rgba(0, 0, 0, 0.5);">
+        <div class="fixed inset-0 z-50 overflow-y-auto" style="background-color: rgba(0,0,0,0.5);">
             <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 transition-opacity" wire:click="tutupDetail">
                     <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
@@ -420,8 +494,8 @@
                     </div>
 
                     {{-- Content Modal --}}
-                    <div class="px-6 py-6">
-                        {{-- Informasi Transaksi --}}
+                    <div class="px-6 py-6 max-h-[75vh] overflow-y-auto">
+                        {{-- Info Cards --}}
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                             <div class="bg-slate-50 rounded-xl p-4">
                                 <h4 class="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
@@ -437,7 +511,7 @@
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-slate-600">Tanggal:</span>
-                                        <span class="font-semibold text-slate-900">{{ $selectedTransaksi->tanggal->format('d/m/Y H:i') }}</span>
+                                        <span class="font-semibold text-slate-900">{{ \Carbon\Carbon::parse($selectedTransaksi->tanggal)->format('d/m/Y H:i') }}</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-slate-600">Kasir:</span>
@@ -488,7 +562,7 @@
                             </div>
                         </div>
 
-                        {{-- Detail Items --}}
+                        {{-- Detail Items Table --}}
                         <div>
                             <h4 class="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
                                 <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -496,7 +570,7 @@
                                 </svg>
                                 Detail Barang (Regular & Manual)
                             </h4>
-                            
+
                             <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
                                 <div class="overflow-x-auto">
                                     <table class="w-full">
@@ -583,12 +657,12 @@
                     </div>
 
                     {{-- Footer Modal --}}
-                    <div class="bg-slate-50 px-6 py-4 flex justify-end gap-3 print:hidden">
-                        <button wire:click="tutupDetail" 
+                    <div class="bg-slate-50 px-6 py-4 flex justify-end gap-3">
+                        <button wire:click="tutupDetail"
                                 class="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors duration-200">
                             Tutup
                         </button>
-                        <button onclick="printDetailTransaksi()" 
+                        <button onclick="printDetailTransaksiBarang()"
                                 class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
@@ -603,176 +677,83 @@
 
     {{-- Hidden Print Layout --}}
     @if($showDetailModal && $selectedTransaksi)
-        <div id="print-content" class="hidden print:block print:fixed print:inset-0 print:bg-white print:p-8">
-            {{-- Print Header --}}
+        <div id="print-content-barang" class="hidden">
             <div class="text-center mb-8 border-b-2 border-slate-300 pb-6">
-                <h1 class="text-3xl font-bold text-slate-900 mb-2">DETAIL TRANSAKSI</h1>
+                <h1 class="text-3xl font-bold text-slate-900 mb-2">DETAIL TRANSAKSI BARANG</h1>
                 <h2 class="text-xl font-semibold text-slate-700">Transaksi #{{ $selectedTransaksi->id }}</h2>
                 <p class="text-slate-600 mt-2">{{ now()->format('d F Y, H:i') }}</p>
             </div>
-
-            {{-- Print Info Section --}}
             <div class="grid grid-cols-2 gap-8 mb-8">
                 <div>
                     <h3 class="text-lg font-semibold text-slate-900 mb-4 border-b border-slate-200 pb-2">Informasi Transaksi</h3>
                     <table class="w-full text-sm">
-                        <tr class="border-b border-slate-100">
-                            <td class="py-2 font-medium text-slate-700 w-32">ID Transaksi:</td>
-                            <td class="py-2 text-slate-900">#{{ $selectedTransaksi->id }}</td>
-                        </tr>
-                        <tr class="border-b border-slate-100">
-                            <td class="py-2 font-medium text-slate-700">Tanggal:</td>
-                            <td class="py-2 text-slate-900">{{ $selectedTransaksi->tanggal->format('d/m/Y H:i') }}</td>
-                        </tr>
-                        <tr class="border-b border-slate-100">
-                            <td class="py-2 font-medium text-slate-700">Kasir:</td>
-                            <td class="py-2 text-slate-900">{{ $selectedTransaksi->kasir }}</td>
-                        </tr>
-                        <tr>
-                            <td class="py-2 font-medium text-slate-700">Keterangan:</td>
-                            <td class="py-2 text-slate-900">{{ $selectedTransaksi->keterangan ?: '-' }}</td>
-                        </tr>
+                        <tr><td class="py-2 font-medium text-slate-700 w-32">ID Transaksi:</td><td class="py-2 text-slate-900">#{{ $selectedTransaksi->id }}</td></tr>
+                        <tr><td class="py-2 font-medium text-slate-700">Tanggal:</td><td class="py-2 text-slate-900">{{ \Carbon\Carbon::parse($selectedTransaksi->tanggal)->format('d/m/Y H:i') }}</td></tr>
+                        <tr><td class="py-2 font-medium text-slate-700">Kasir:</td><td class="py-2 text-slate-900">{{ $selectedTransaksi->kasir }}</td></tr>
+                        <tr><td class="py-2 font-medium text-slate-700">Keterangan:</td><td class="py-2 text-slate-900">{{ $selectedTransaksi->keterangan ?: '-' }}</td></tr>
                     </table>
                 </div>
-
                 <div>
                     <h3 class="text-lg font-semibold text-slate-900 mb-4 border-b border-slate-200 pb-2">Ringkasan Keuangan</h3>
                     <table class="w-full text-sm">
-                        <tr class="border-b border-slate-100">
-                            <td class="py-2 font-medium text-slate-700 w-32">Total Transaksi:</td>
-                            <td class="py-2 text-slate-900 font-bold">Rp {{ number_format($selectedTransaksi->total_harga, 0, ',', '.') }}</td>
-                        </tr>
-                        <tr class="border-b border-slate-100">
-                            <td class="py-2 font-medium text-slate-700">Total Profit:</td>
-                            <td class="py-2 text-slate-900 font-semibold">Rp {{ number_format(collect($detailItems)->sum('profit'), 0, ',', '.') }}</td>
-                        </tr>
-                        <tr class="border-b border-slate-100">
-                            <td class="py-2 font-medium text-slate-700">Jumlah Item:</td>
-                            <td class="py-2 text-slate-900">{{ collect($detailItems)->sum('jumlah') }} unit</td>
-                        </tr>
-                        @if(collect($detailItems)->where('is_manual', true)->count() > 0)
-                            <tr>
-                                <td class="py-2 font-medium text-slate-700">Item Manual:</td>
-                                <td class="py-2 text-slate-900 text-orange-700">{{ collect($detailItems)->where('is_manual', true)->count() }} item</td>
-                            </tr>
-                        @endif
+                        <tr><td class="py-2 font-medium text-slate-700 w-32">Total Transaksi:</td><td class="py-2 font-bold">Rp {{ number_format($selectedTransaksi->total_harga, 0, ',', '.') }}</td></tr>
+                        <tr><td class="py-2 font-medium text-slate-700">Total Profit:</td><td class="py-2 font-semibold">Rp {{ number_format(collect($detailItems)->sum('profit'), 0, ',', '.') }}</td></tr>
+                        <tr><td class="py-2 font-medium text-slate-700">Jumlah Item:</td><td class="py-2">{{ collect($detailItems)->sum('jumlah') }} unit</td></tr>
                     </table>
                 </div>
             </div>
-
-            {{-- Print Detail Items --}}
-            <div>
-                <h3 class="text-lg font-semibold text-slate-900 mb-4 border-b border-slate-200 pb-2">Detail Barang (Regular & Manual)</h3>
-                
-                <table class="w-full border-collapse border border-slate-300 text-sm">
-                    <thead>
-                        <tr class="bg-slate-100">
-                            <th class="border border-slate-300 px-3 py-2 text-left font-semibold">Type</th>
-                            <th class="border border-slate-300 px-3 py-2 text-left font-semibold">Barang</th>
-                            <th class="border border-slate-300 px-3 py-2 text-center font-semibold">Qty</th>
-                            <th class="border border-slate-300 px-3 py-2 text-right font-semibold">Harga Jual</th>
-                            <th class="border border-slate-300 px-3 py-2 text-right font-semibold">Subtotal</th>
-                            <th class="border border-slate-300 px-3 py-2 text-right font-semibold">Harga Beli</th>
-                            <th class="border border-slate-300 px-3 py-2 text-right font-semibold">Profit</th>
-                            <th class="border border-slate-300 px-3 py-2 text-center font-semibold">Margin</th>
-                            <th class="border border-slate-300 px-3 py-2 text-left font-semibold">Supplier</th>
+            <h3 class="text-lg font-semibold text-slate-900 mb-4 border-b border-slate-200 pb-2">Detail Barang</h3>
+            <table class="w-full border-collapse border border-slate-300 text-sm">
+                <thead>
+                    <tr class="bg-slate-100">
+                        <th class="border border-slate-300 px-3 py-2 text-left">Type</th>
+                        <th class="border border-slate-300 px-3 py-2 text-left">Barang</th>
+                        <th class="border border-slate-300 px-3 py-2 text-center">Qty</th>
+                        <th class="border border-slate-300 px-3 py-2 text-right">Harga Jual</th>
+                        <th class="border border-slate-300 px-3 py-2 text-right">Subtotal</th>
+                        <th class="border border-slate-300 px-3 py-2 text-right">Harga Beli</th>
+                        <th class="border border-slate-300 px-3 py-2 text-right">Profit</th>
+                        <th class="border border-slate-300 px-3 py-2 text-center">Margin</th>
+                        <th class="border border-slate-300 px-3 py-2 text-left">Supplier</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($detailItems as $item)
+                        <tr>
+                            <td class="border border-slate-300 px-3 py-2">{{ $item['is_manual'] ? 'MANUAL' : 'REGULAR' }}</td>
+                            <td class="border border-slate-300 px-3 py-2">{{ $item['barang_nama'] }}</td>
+                            <td class="border border-slate-300 px-3 py-2 text-center">{{ $item['jumlah'] }} {{ $item['satuan'] ?? 'pcs' }}</td>
+                            <td class="border border-slate-300 px-3 py-2 text-right">Rp {{ number_format($item['harga_jual'], 0, ',', '.') }}</td>
+                            <td class="border border-slate-300 px-3 py-2 text-right font-bold">Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</td>
+                            <td class="border border-slate-300 px-3 py-2 text-right">Rp {{ number_format($item['harga_beli'], 0, ',', '.') }}</td>
+                            <td class="border border-slate-300 px-3 py-2 text-right font-semibold {{ $item['profit'] >= 0 ? 'text-green-700' : 'text-red-700' }}">Rp {{ number_format($item['profit'], 0, ',', '.') }}</td>
+                            <td class="border border-slate-300 px-3 py-2 text-center">{{ number_format($item['profit_margin'], 1) }}%</td>
+                            <td class="border border-slate-300 px-3 py-2">{{ $item['supplier'] }}</td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($detailItems as $item)
-                            <tr class="border-b border-slate-200">
-                                <td class="border border-slate-300 px-3 py-2">
-                                    {{ $item['is_manual'] ? 'MANUAL' : 'REGULAR' }}
-                                </td>
-                                <td class="border border-slate-300 px-3 py-2">{{ $item['barang_nama'] }}</td>
-                                <td class="border border-slate-300 px-3 py-2 text-center">{{ $item['jumlah'] }} {{ $item['satuan'] ?? 'pcs' }}</td>
-                                <td class="border border-slate-300 px-3 py-2 text-right">Rp {{ number_format($item['harga_jual'], 0, ',', '.') }}</td>
-                                <td class="border border-slate-300 px-3 py-2 text-right font-bold">Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</td>
-                                <td class="border border-slate-300 px-3 py-2 text-right">Rp {{ number_format($item['harga_beli'], 0, ',', '.') }}</td>
-                                <td class="border border-slate-300 px-3 py-2 text-right font-semibold {{ $item['profit'] >= 0 ? 'text-green-700' : 'text-red-700' }}">
-                                    Rp {{ number_format($item['profit'], 0, ',', '.') }}
-                                </td>
-                                <td class="border border-slate-300 px-3 py-2 text-center">{{ number_format($item['profit_margin'], 1) }}%</td>
-                                <td class="border border-slate-300 px-3 py-2">{{ $item['supplier'] }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                    <tfoot>
-                        <tr class="bg-slate-100 font-bold">
-                            <td colspan="4" class="border border-slate-300 px-3 py-2 text-right">TOTAL:</td>
-                            <td class="border border-slate-300 px-3 py-2 text-right">Rp {{ number_format(collect($detailItems)->sum('subtotal'), 0, ',', '.') }}</td>
-                            <td class="border border-slate-300 px-3 py-2"></td>
-                            <td class="border border-slate-300 px-3 py-2 text-right {{ collect($detailItems)->sum('profit') >= 0 ? 'text-green-700' : 'text-red-700' }}">
-                                Rp {{ number_format(collect($detailItems)->sum('profit'), 0, ',', '.') }}
-                            </td>
-                            <td colspan="2" class="border border-slate-300 px-3 py-2"></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-
-            {{-- Print Footer --}}
+                    @endforeach
+                </tbody>
+                <tfoot>
+                    <tr class="bg-slate-100 font-bold">
+                        <td colspan="4" class="border border-slate-300 px-3 py-2 text-right">TOTAL:</td>
+                        <td class="border border-slate-300 px-3 py-2 text-right">Rp {{ number_format(collect($detailItems)->sum('subtotal'), 0, ',', '.') }}</td>
+                        <td class="border border-slate-300 px-3 py-2"></td>
+                        <td class="border border-slate-300 px-3 py-2 text-right {{ collect($detailItems)->sum('profit') >= 0 ? 'text-green-700' : 'text-red-700' }}">Rp {{ number_format(collect($detailItems)->sum('profit'), 0, ',', '.') }}</td>
+                        <td colspan="2" class="border border-slate-300 px-3 py-2"></td>
+                    </tr>
+                </tfoot>
+            </table>
             <div class="mt-8 pt-6 border-t border-slate-300 text-center text-sm text-slate-600">
                 <p>Dicetak pada: {{ now()->format('d F Y, H:i:s') }}</p>
-                <p class="mt-1">Sistem Manajemen Penjualan (Regular & Manual Items)</p>
+                <p class="mt-1">Sistem Manajemen Penjualan Barang</p>
             </div>
         </div>
     @endif
 
-    {{-- Toast Notifications --}}
-    @if (session()->has('message'))
-        <div class="fixed top-4 right-4 z-50" id="success-toast">
-            <div class="bg-white rounded-lg shadow-lg border border-emerald-200 p-4 flex items-center gap-3 max-w-sm">
-                <div class="flex-shrink-0">
-                    <div class="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
-                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                    </div>
-                </div>
-                <div class="flex-1">
-                    <p class="text-sm font-medium text-slate-900">Sukses!</p>
-                    <p class="text-sm text-slate-600">{{ session('message') }}</p>
-                </div>
-                <button onclick="document.getElementById('success-toast').remove()" class="flex-shrink-0 text-slate-400 hover:text-slate-600">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    @endif
-
-    @if ($errors->any())
-        <div class="fixed top-4 right-4 z-50" id="error-toast">
-            <div class="bg-white rounded-lg shadow-lg border border-red-200 p-4 flex items-center gap-3 max-w-sm">
-                <div class="flex-shrink-0">
-                    <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </div>
-                </div>
-                <div class="flex-1">
-                    <p class="text-sm font-medium text-slate-900">Error!</p>
-                    @foreach ($errors->all() as $error)
-                        <p class="text-sm text-slate-600">{{ $error }}</p>
-                    @endforeach
-                </div>
-                <button onclick="document.getElementById('error-toast').remove()" class="flex-shrink-0 text-slate-400 hover:text-slate-600">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    @endif
 </div>
 
 {{-- JavaScript --}}
 <script>
     document.addEventListener('livewire:init', function () {
-        // Confirmation dialog for delete
         Livewire.on('confirm-delete', (event) => {
             const data = event;
             if (confirm(`${data.text}\n\nPeringatan: Stok barang reguler akan dikembalikan, item manual tidak berpengaruh pada stok.`)) {
@@ -780,69 +761,66 @@
             }
         });
 
-        // Listen for refresh events
         Livewire.on('refresh-component', () => {
             @this.$refresh();
         });
 
-        // Listen for transaction deleted event
         Livewire.on('transaksi-deleted', (event) => {
             const row = document.querySelector(`[data-transaksi-id="${event.transaksiId}"]`);
             if (row) {
                 row.style.opacity = '0.5';
                 row.style.transform = 'translateX(-100%)';
-                setTimeout(() => {
-                    @this.$refresh();
-                }, 300);
+                setTimeout(() => { @this.$refresh(); }, 300);
             } else {
-                setTimeout(() => {
-                    @this.$refresh();
-                }, 100);
+                setTimeout(() => { @this.$refresh(); }, 100);
             }
         });
     });
 
-    // Enhanced Print Function
-    function printDetailTransaksi() {
+    function printDetailTransaksiBarang() {
         const modal = document.querySelector('.fixed.inset-0.z-50');
-        const printContent = document.getElementById('print-content');
-        
-        if (modal) modal.style.display = 'none';
-        if (printContent) printContent.classList.remove('hidden');
-        
-        window.print();
-        
-        setTimeout(() => {
-            if (modal) modal.style.display = 'flex';
-            if (printContent) printContent.classList.add('hidden');
-        }, 100);
-    }
+        const printContent = document.getElementById('print-content-barang');
 
-    // Handle print events
-    window.addEventListener('beforeprint', function() {
-        const printContent = document.getElementById('print-content');
+        if (modal) modal.style.display = 'none';
         if (printContent) {
             printContent.classList.remove('hidden');
             printContent.style.display = 'block';
         }
-        document.body.classList.add('printing');
+
+        window.print();
+
+        setTimeout(() => {
+            if (modal) modal.style.display = 'flex';
+            if (printContent) {
+                printContent.classList.add('hidden');
+                printContent.style.display = 'none';
+            }
+        }, 100);
+    }
+
+    window.addEventListener('beforeprint', function () {
+        const printContent = document.getElementById('print-content-barang');
+        if (printContent) {
+            printContent.classList.remove('hidden');
+            printContent.style.display = 'block';
+        }
     });
 
-    window.addEventListener('afterprint', function() {
-        const printContent = document.getElementById('print-content');
+    window.addEventListener('afterprint', function () {
+        const printContent = document.getElementById('print-content-barang');
         if (printContent) {
             printContent.classList.add('hidden');
             printContent.style.display = 'none';
         }
-        document.body.classList.remove('printing');
     });
-    
-    // Auto hide toasts
-    document.addEventListener('DOMContentLoaded', function() {
+
+    // Auto hide toasts after 5 seconds
+    document.addEventListener('DOMContentLoaded', function () {
         const toasts = document.querySelectorAll('[id$="-toast"]');
         toasts.forEach(toast => {
             setTimeout(() => {
                 if (toast) {
+                    toast.style.transition = 'opacity 0.3s, transform 0.3s';
                     toast.style.opacity = '0';
                     toast.style.transform = 'translateX(100%)';
                     setTimeout(() => toast.remove(), 300);
@@ -850,4 +828,4 @@
             }, 5000);
         });
     });
-</script>
+</script>   

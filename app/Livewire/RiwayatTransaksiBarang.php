@@ -43,11 +43,6 @@ class RiwayatTransaksiBarang extends Component
         'page' => ['except' => 1],
     ];
 
-    public function updatingPage()
-    {
-        $this->resetPage();
-    }
-
     public function mount()
     {
         // Set default tanggal ke bulan ini
@@ -69,39 +64,42 @@ class RiwayatTransaksiBarang extends Component
 
     public function getTransaksiData()
     {
-        $query = Transaksi::with(['itemPenjualan.barang', 'itemPenjualan.pembelian'])
-            ->select('*');
+        $query = Transaksi::with([
+            'itemPenjualan.barang:id,nama,merk,satuan',
+            'itemPenjualan.pembelian:id,harga_beli,supplier',
+        ]);
 
-        // Filter pencarian
         if ($this->search) {
-            $query->where(function($q) {
-                $q->where('kasir', 'like', '%' . $this->search . '%')
-                  ->orWhere('keterangan', 'like', '%' . $this->search . '%')
-                  ->orWhere('id', 'like', '%' . $this->search . '%')
-                  ->orWhereHas('itemPenjualan.barang', function($subQ) {
-                      $subQ->where('nama', 'like', '%' . $this->search . '%')
-                           ->orWhere('merk', 'like', '%' . $this->search . '%');
-                  })
-                  ->orWhereHas('itemPenjualan', function($subQ) {
-                      $subQ->where('nama_barang_manual', 'like', '%' . $this->search . '%');
-                  });
+            $search = $this->search;
+            
+            // Cari ID transaksi via join — lebih cepat dari whereHas nested
+            $transaksiIds = DB::table('penjualan_items as pi')
+                ->leftJoin('barangs as b', 'pi.barang_id', '=', 'b.id')
+                ->where(function($q) use ($search) {
+                    $q->where('b.nama', 'like', "%{$search}%")
+                    ->orWhere('b.merk', 'like', "%{$search}%")
+                    ->orWhere('pi.nama_barang_manual', 'like', "%{$search}%");
+                })
+                ->pluck('pi.penjualan_id');
+
+            $query->where(function($q) use ($search, $transaksiIds) {
+                $q->where('kasir', 'like', "%{$search}%")
+                ->orWhere('keterangan', 'like', "%{$search}%")
+                ->orWhere('id', 'like', "%{$search}%")
+                ->orWhereIn('id', $transaksiIds);
             });
         }
 
-        // Filter tanggal
         if ($this->tanggal_mulai) {
             $query->whereDate('tanggal', '>=', $this->tanggal_mulai);
         }
         if ($this->tanggal_selesai) {
             $query->whereDate('tanggal', '<=', $this->tanggal_selesai);
         }
-
-        // Filter kasir
         if ($this->kasir_filter) {
             $query->where('kasir', $this->kasir_filter);
         }
 
-        // Sorting
         $query->orderBy($this->sortBy, $this->sortDirection);
 
         return $query->paginate($this->per_page);
@@ -256,59 +254,69 @@ class RiwayatTransaksiBarang extends Component
         $this->selectedTransaksi = null;
         $this->detailItems = [];
     }
-
     public function hitungSummary()
     {
-        $query = Transaksi::query();
+        // Build base query sekali, simpan sebagai closure agar bisa dipakai ulang
+        $buildQuery = function() {
+            $query = Transaksi::query();
 
-        // Apply same filters as main query
-        if ($this->search) {
-            $query->where(function($q) {
-                $q->where('kasir', 'like', '%' . $this->search . '%')
-                ->orWhere('keterangan', 'like', '%' . $this->search . '%')
-                ->orWhere('id', 'like', '%' . $this->search . '%')
-                ->orWhereHas('itemPenjualan.barang', function($subQ) {
-                    $subQ->where('nama', 'like', '%' . $this->search . '%')
-                        ->orWhere('merk', 'like', '%' . $this->search . '%');
-                })
-                ->orWhereHas('itemPenjualan', function($subQ) {
-                    $subQ->where('nama_barang_manual', 'like', '%' . $this->search . '%');
+            if ($this->search) {
+                $search = $this->search;
+
+                $transaksiIds = DB::table('penjualan_items as pi')
+                    ->leftJoin('barangs as b', 'pi.barang_id', '=', 'b.id')
+                    ->where(function($q) use ($search) {
+                        $q->where('b.nama', 'like', "%{$search}%")
+                        ->orWhere('b.merk', 'like', "%{$search}%")
+                        ->orWhere('pi.nama_barang_manual', 'like', "%{$search}%");
+                    })
+                    ->pluck('pi.penjualan_id');
+
+                $query->where(function($q) use ($search, $transaksiIds) {
+                    $q->where('kasir', 'like', "%{$search}%")
+                    ->orWhere('keterangan', 'like', "%{$search}%")
+                    ->orWhere('id', 'like', "%{$search}%")
+                    ->orWhereIn('id', $transaksiIds);
                 });
-            });
-        }
+            }
 
-        if ($this->tanggal_mulai) {
-            $query->whereDate('tanggal', '>=', $this->tanggal_mulai);
-        }
-        if ($this->tanggal_selesai) {
-            $query->whereDate('tanggal', '<=', $this->tanggal_selesai);
-        }
-        if ($this->kasir_filter) {
-            $query->where('kasir', $this->kasir_filter);
-        }
+            if ($this->tanggal_mulai) {
+                $query->whereDate('tanggal', '>=', $this->tanggal_mulai);
+            }
+            if ($this->tanggal_selesai) {
+                $query->whereDate('tanggal', '<=', $this->tanggal_selesai);
+            }
+            if ($this->kasir_filter) {
+                $query->where('kasir', $this->kasir_filter);
+            }
 
-        // Hitung summary
-        $this->totalTransaksi = $query->count();
-        $this->totalPenjualan = $query->sum('total_harga');
-        
-        // Hitung total profit untuk regular dan manual items
-        $transaksiIds = $query->pluck('id');
-        
+            return $query;
+        };
+
+        // Query 1: hitung count dan sum — pakai instance pertama
+        $summary = $buildQuery()
+            ->selectRaw('COUNT(*) as total_transaksi, SUM(total_harga) as total_penjualan')
+            ->first();
+
+        $this->totalTransaksi = $summary->total_transaksi ?? 0;
+        $this->totalPenjualan = $summary->total_penjualan ?? 0;
+
+        // Query 2: ambil IDs — pakai instance BARU dari closure
+        $transaksiIds = $buildQuery()->pluck('id');
+
         if ($transaksiIds->isNotEmpty()) {
-            // Profit dari regular items
             $regularProfit = DB::table('penjualan_items as pi')
                 ->join('pembelians as p', 'pi.pembelian_id', '=', 'p.id')
                 ->whereIn('pi.penjualan_id', $transaksiIds)
                 ->where('pi.is_manual', false)
-                ->selectRaw('SUM((pi.harga_jual - p.harga_beli) * pi.jumlah) as total_profit')
-                ->value('total_profit') ?? 0;
+                ->selectRaw('SUM((pi.harga_jual - p.harga_beli) * pi.jumlah) as total')
+                ->value('total') ?? 0;
 
-            // Profit dari manual items
             $manualProfit = DB::table('penjualan_items as pi')
                 ->whereIn('pi.penjualan_id', $transaksiIds)
                 ->where('pi.is_manual', true)
-                ->selectRaw('SUM((pi.harga_jual - COALESCE(pi.harga_beli_manual, 0)) * pi.jumlah) as total_profit')
-                ->value('total_profit') ?? 0;
+                ->selectRaw('SUM((pi.harga_jual - COALESCE(pi.harga_beli_manual, 0)) * pi.jumlah) as total')
+                ->value('total') ?? 0;
 
             $this->totalProfit = $regularProfit + $manualProfit;
         } else {

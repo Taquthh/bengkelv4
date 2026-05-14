@@ -615,7 +615,7 @@
         <div class="footer">
             <p><strong>Kasir:</strong> {{ $transaksi->kasir }}</p>
             <p>Terima kasih atas kepercayaan Anda menggunakan jasa kami.</p>
-            <p>Dicetak pada: {{ now()->format('d F Y, H:i') }} WIB</p>
+            <p>Dicetak pada: {{ now()->timezone('Asia/Makassar')->translatedFormat('d F Y, H:i') }} WITA</p>
         </div>
     </div>
 

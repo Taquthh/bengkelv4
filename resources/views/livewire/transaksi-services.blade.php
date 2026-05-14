@@ -24,7 +24,7 @@
                         <h1 class="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent">
                             Transaksi Service Mobil
                         </h1>
-                        <p class="text-gray-500 font-medium text-lg">{{ now()->format('l, d F Y • H:i') }}</p>
+                        <p class="text-gray-500 font-medium text-lg">{{ now()->timezone('Asia/Makassar')->translatedFormat('d F Y, H:i') }} WITA</p>
                     </div>
                 </div>
                 
