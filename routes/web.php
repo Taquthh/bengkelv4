@@ -21,7 +21,6 @@ use App\Livewire\RiwayatTransaksi;
 use App\Livewire\RiwayatTransaksiBarang;
 use App\Livewire\TransaksiBarang;
 use App\Livewire\Dashboard  ;
-use Illuminate\Support\Facades\Artisan;
 
 Route::get('/', fn () => view('welcome'));
 
@@ -53,11 +52,6 @@ Route::middleware(['auth'])->group(function () {
         // // Opsional: daftar riwayat penjualan
         // Route::get('/penjualan', PenjualanIndex::class)->name('penjualan.index');
     });
-
-    Route::get('/run-migration', function () {
-    Artisan::call('migrate', ['--force' => true]);
-    return "Migrasi berhasil dijalankan!";
-});
 
     Route::get('/service/invoice/{id}', [App\Http\Controllers\ServiceInvoiceController::class, 'show'])
         ->name('service.invoice');
