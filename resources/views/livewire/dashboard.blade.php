@@ -181,7 +181,7 @@
             @endif
 
             {{-- ── Tabel Riwayat Transaksi Terbaru ── --}}
-            @if(in_array(Auth::user()->role, ['kasir', 'owner', 'keuangan']))
+            @if(in_array(Auth::user()->role, ['kasir', 'owner']))
             <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
                 <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                     <div class="flex items-center gap-3">
@@ -502,5 +502,90 @@
     });
 });
     </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const isDark = document.documentElement.classList.contains('dark');
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    const tickColor = isDark ? '#9ca3af' : '#6b7280';
+
+    const labels7 = @json($ownerStats['labels_7_hari']);
+    const dataServis = @json($ownerStats['data_servis_7_hari']);
+    const dataBarang = @json($ownerStats['data_barang_7_hari']);
+
+    new Chart(document.getElementById('chartPendapatan7Hari'), {
+        type: 'bar',
+        data: {
+            labels: labels7,
+            datasets: [
+                {
+                    label: 'Servis',
+                    data: dataServis,
+                    backgroundColor: '#2563eb',
+                    borderRadius: 4,
+                    stack: 'stack'
+                },
+                {
+                    label: 'Barang',
+                    data: dataBarang,
+                    backgroundColor: '#16a34a',
+                    borderRadius: 4,
+                    stack: 'stack'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ctx.dataset.label + ': Rp' + ctx.raw.toLocaleString('id-ID')
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: tickColor, font: { size: 11 } }
+                },
+                y: {
+                    grid: { color: gridColor },
+                    ticks: {
+                        color: tickColor,
+                        font: { size: 11 },
+                        callback: v => v >= 1000000 ? 'Rp' + (v/1000000).toFixed(1) + 'jt' : 'Rp' + (v/1000) + 'rb'
+                    }
+                }
+            }
+        }
+    });
+
+    new Chart(document.getElementById('chartStatusPekerjaan'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Selesai', 'Proses', 'Belum'],
+            datasets: [{
+                data: [
+                    {{ $ownerStats['status_selesai'] }},
+                    {{ $ownerStats['status_proses'] }},
+                    {{ $ownerStats['status_belum'] }}
+                ],
+                backgroundColor: ['#16a34a', '#3b82f6', '#f97316'],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: { legend: { display: false } }
+        }
+    });
+});
+</script>
 
 </div>
