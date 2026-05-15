@@ -34,6 +34,34 @@ class Dashboard extends RiwayatService // Lepas inheritance jika RiwayatService 
     // 2. STATISTIK OWNER & LAPORAN (Computed Property)
     public function getOwnerStatsProperty(): array
     {
+        $defaultStats = [
+        'pendapatan_bulan_ini'  => 0,
+        'pengeluaran_bulan_ini' => 0,
+        'total_transaksi_bulan' => 0,
+        'total_piutang'         => 0,
+        'piutang_total'         => 0,
+        'pct_pendapatan'        => 0,
+        'avg_per_order'         => 0,
+        'count_belum_lunas'     => 0,
+        'labels_7_hari'         => [],
+        'data_7_hari'           => [],
+        'data_servis_7_hari'    => [],
+        'data_barang_7_hari'    => [],
+        'piutang_lama'          => 0,
+        'top_jasa'              => [],
+        'status_selesai'        => 0,
+        'status_proses'         => 0,
+        'status_belum'          => 0,
+        'operasional'           => 0,
+        'laba_bersih'           => 0,
+        'stok_menipis'          => 0,
+        ];
+
+        if (Auth::user()->role !== 'owner') {
+        return $defaultStats;
+        
+        }
+        
         if (Auth::user()->role !== 'owner') return [];
 
         // --- 1. INISIALISASI WAKTU ---
@@ -102,6 +130,7 @@ class Dashboard extends RiwayatService // Lepas inheritance jika RiwayatService 
             ->count();
 
         // --- 9. RETURN ARRAY (SINKRON DENGAN BLADE) ---
+        
         return [
             'pendapatan_bulan_ini'  => $pendapatanIni,
             'pengeluaran_bulan_ini' => $pengeluaranIni,

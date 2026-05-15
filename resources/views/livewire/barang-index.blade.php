@@ -422,16 +422,13 @@
                                 wire:model="satuan" 
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('satuan') border-red-500 @enderror"
                             >
-                                <option value="">Pilih Satuan</option>
-                                <option value="pcs">Pcs</option>
-                                <option value="unit">Unit</option>
-                                <option value="kg">Kg</option>
-                                <option value="liter">Liter</option>
-                                <option value="meter">Meter</option>
-                                <option value="box">Box</option>
-                                <option value="pack">Pack</option>
-                                <option value="set">Set</option>
-                                <option value="roll">Roll</option>
+                                <option value="">-- Pilih Satuan --</option>
+                                <option value="ltr">Liter (Ltr)</option>
+                                <option value="gln">Galon (Gln)</option>
+                                <option value="pcs">Pieces (Pcs)</option>
+                                <option value="klng">Kaleng (Klng)</option>
+                                <option value="btl">Botol (Btl)</option>
+                                <option value="set">Set (Set)</option>
                             </select>
                             @error('satuan') 
                             @php($satuan = $message)

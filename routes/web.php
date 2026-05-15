@@ -5,6 +5,7 @@ use App\Livewire\PengeluaranOperasionals;
 use App\Livewire\TransaksiServices;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
+use App\Livewire\Admin\UserManagement;
 use App\Livewire\BarangIndex;
 use App\Livewire\DashboardKeuangan;
 use App\Livewire\LaporanBulanan;
@@ -35,6 +36,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', Dashboard::class)
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
+    
+    Route::middleware(['auth', 'role:owner'])->group(function () {
+    Route::get('/usermanagement', UserManagement::class)->name('usermanagement');
+});
 
     Route::middleware(['auth', 'role:kasir,owner'])->group(function () {
         Route::get('/barang/stok', PembelianIndex::class); // Ini hanya untuk Livewire v3

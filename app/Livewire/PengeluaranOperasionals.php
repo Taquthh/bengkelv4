@@ -42,6 +42,29 @@ class PengeluaranOperasionals extends Component
         'jumlah_pengeluaran.min' => 'Jumlah pengeluaran minimal Rp 1.',
     ];
 
+    // Properti baru
+    public $showDeleteModal = false;
+    public $deleteId = null;
+    public $deleteItemName = '';
+
+    // Method untuk memicu modal konfirmasi
+    public function confirmDelete($id, $itemName)
+    {
+        $this->deleteId = $id;
+        $this->deleteItemName = $itemName;
+        $this->showDeleteModal = true;
+    }
+
+    // Method untuk menutup modal
+    public function closeDeleteModal()
+    {
+        $this->showDeleteModal = false;
+        $this->reset(['deleteId', 'deleteItemName']);
+    }
+
+    // Update method delete yang sudah ada
+    
+
     public function mount()
     {
         // Set tanggal hari ini sebagai default
@@ -179,12 +202,16 @@ class PengeluaranOperasionals extends Component
         $this->showModal = false;
     }
 
-    public function delete($id)
+    public function delete()
     {
-        PengeluaranOperasional::findOrFail($id)->delete();
-        session()->flash('success', 'Pengeluaran berhasil dihapus!');
-        
-        $this->initializeAvailableWeeks();
+        if ($this->deleteId) {
+            $pengeluaran = PengeluaranOperasional::find($this->deleteId);
+            if ($pengeluaran) {
+                $pengeluaran->delete();
+                session()->flash('success', 'Data berhasil dihapus');
+            }
+        }
+        $this->closeDeleteModal();
     }
 
     private function validateNotSunday($date)

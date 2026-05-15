@@ -42,14 +42,23 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                                     </svg>
                                 </div>
+                                
                                 <select id="role"
                                     name="role"
+                                    required
                                     class="block w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 transition-colors duration-200">
-                                    <option value="">-- Pilih Peran --</option>
-                                    <option value="kasir" {{ old('role') == 'kasir' ? 'selected' : '' }}>Kasir</option>
-                                    <option value="keuangan" {{ old('role') == 'keuangan' ? 'selected' : '' }}>Keuangan</option>
-                                    <option value="owner" {{ old('role') == 'owner' ? 'selected' : '' }}>Owner</option>
+                                    
+                                    {{-- Jika database kosong, paksa pilihan ke Owner --}}
+                                    
+                                        <option value="" disabled {{ old('role') ? '' : 'selected' }}>-- Pilih Peran --</option>
+                                        @if(\App\Models\User::count() === 0)
+                                        <option value="owner" selected>Owner (Setup Awal)</option>
+                                        @else
+                                        <option value="kasir" {{ old('role') == 'kasir' ? 'selected' : '' }}>Kasir</option>
+                                        <option value="keuangan" {{ old('role') == 'keuangan' ? 'selected' : '' }}>Keuangan</option>
+                                    @endif
                                 </select>
+                                
                                 <x-input-error :messages="$errors->get('role')" class="mt-1" />
                             </div>
                         </div>
@@ -125,6 +134,19 @@
                         </div>
                     </div>
 
+                    @if(\App\Models\User::exists())
+                        <div class="mt-4">
+                            <x-input-label for="token" :value="__('Registration Token')" />
+                            <x-text-input id="token" class="block mt-1 w-full" type="text" name="token" :value="old('token')" required />
+                            <x-input-error :messages="$errors->get('token')" class="mt-2" />
+                            <p class="text-xs text-gray-500 mt-1 italic">*Dapatkan token dari Owner untuk mendaftar.</p>
+                        </div>
+                    @else
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+                            <strong>Setup Awal:</strong> Anda adalah pendaftar pertama, Anda akan otomatis menjadi <b>Owner</b> dan tidak memerlukan token.
+                        </div>
+                    @endif
+
                     <!-- Submit Button -->
                     <div class="pt-2">
                         <x-primary-button class="w-full flex justify-center items-center py-3 px-4 rounded-lg shadow-md text-sm font-semibold text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
@@ -153,6 +175,8 @@
                     </p>
                 </div>
             </div>
+
+            
 
     <!-- Script Toggle Password -->
     <script>

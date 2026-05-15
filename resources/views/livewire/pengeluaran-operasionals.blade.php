@@ -208,8 +208,7 @@
                                                         </svg>
                                                         Edit
                                                     </button>
-                                                    <button wire:click="delete({{ $pengeluaran->id }})"
-                                                        wire:confirm="Yakin ingin menghapus data ini?"
+                                                    <button wire:click="confirmDelete({{ $pengeluaran->id }}, '{{ $pengeluaran->nama_item }}')"
                                                         class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-lg shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-red-500 transform hover:scale-105 transition-all duration-200">
                                                         <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -412,6 +411,38 @@
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- Modal Konfirmasi Hapus -->
+    @if($showDeleteModal)
+        <div class="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-[60] p-4">
+            <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+                <div class="p-6 text-center">
+                    <!-- Icon Peringatan -->
+                    <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    
+                    <h3 class="text-xl font-bold text-slate-900 mb-2">Konfirmasi Hapus</h3>
+                    <p class="text-slate-600 mb-6">
+                        Apakah Anda yakin ingin menghapus item <span class="font-bold text-slate-900">"{{ $deleteItemName }}"</span>? Tindakan ini tidak dapat dibatalkan.
+                    </p>
+
+                    <div class="flex flex-col space-y-2">
+                        <button wire:click="delete"
+                            class="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg transition-all transform active:scale-95">
+                            Ya, Hapus Sekarang
+                        </button>
+                        <button wire:click="closeDeleteModal"
+                            class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all">
+                            Batalkan
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

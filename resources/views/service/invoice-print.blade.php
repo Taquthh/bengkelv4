@@ -5,42 +5,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invoice {{ $transaksi->invoice }}</title>
     <style>
+        /* RESET & DASAR */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
         @page {
-    margin: 10mm;
-    size: A4;
-}
-        
+            margin: 8mm; /* Perkecil margin kertas agar konten lebih lega */
+            size: A4;
+        }
+
         body {
             font-family: 'Arial', sans-serif;
             font-size: 11px;
-            line-height: 1.3;
+            line-height: 1.2; /* Dipersempit sedikit dari 1.3 */
             color: #080808;
             background: white;
+            -webkit-print-color-adjust: exact; /* Pastikan warna tercetak */
         }
         
         .container {
             max-width: 210mm;
             margin: 0 auto;
-            padding: 10px;
+            padding: 5px;
             background: white;
+            position: relative;
+        }
+
+        /* PERBAIKAN PRINT UNTUK MENCEGAH HALAMAN 2 */
+        @media print {
+            html, body {
+                height: auto !important;
+                overflow: visible !important;
+            }
+            .container {
+                height: auto !important; /* Jangan dipaksa 297mm */
+                overflow: visible !important;
+                padding: 0;
+                margin: 0;
+            }
+            /* Hilangkan elemen kosong atau jarak berlebih di akhir */
+            .footer {
+                page-break-after: avoid;
+                margin-top: 10px; /* Kurangi margin top footer */
+            }
+            /* Pastikan tidak ada pemutusan halaman di tengah komponen penting */
+            .summary-section, .signature-section, .info-section {
+                page-break-inside: avoid;
+            }
         }
         
+        /* HEADER */
         .header {
             border-bottom: 2px solid #2563eb;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
         }
         
         .header-top {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 10px;
         }
         
         .company-info h1 {
@@ -374,7 +401,8 @@
             <div class="header-top">
                 <div class="company-info">
                     <h1>FJS Auto Service</h1>
-                    <p>Jl. Veteran No.123, Banjarmasin</p>
+                    <p>JL. PEKAPURAN RAYA SAMPING GG MERPATI IV RT 31 NO.34 LINGKAR DALAM SELATAN</p>
+                    <p>BANJARMASIN</p>
                     <p>📞 0813 4841 0569 (Pa Taufik)</p>
                 </div>
                 <div class="invoice-info">
