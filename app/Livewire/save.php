@@ -17,7 +17,6 @@ use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Livewire\Attributes\On;
 
 #[Layout('layouts.app')]
 class RiwayatService extends Component
@@ -63,14 +62,14 @@ class RiwayatService extends Component
     public $selectedBarangId = '';
     public $itemJumlah = 1;
     public $itemHargaJual = 0;
-    public $itemType = 'barang';
+    public $itemType = 'barang'; // 'barang', 'jasa', or 'manual'
 
-    // Service properties for adding
+    // Service properties for adding - FIXED NAMES
     public $namaJasaBaru = '';
     public $hargaJasaBaru = 0;
     public $keteranganJasaBaru = '';
 
-    // Manual item properties
+    // Manual item properties - Updated to match form
     public $nama_barang_manual = '';
     public $jumlah_manual = 1;
     public $satuan_manual = 'pcs';
@@ -86,12 +85,12 @@ class RiwayatService extends Component
     public $editNamaJasa = '';
     public $editHargaJasa = 0;
     public $editKeteranganJasa = '';
-
+    
     // Edit manual item properties
     public $editNamaBarangManual = '';
     public $editSatuanManual = 'pcs';
     public $editKeteranganManual = '';
-
+    
     public $itemToDelete = null;
     public $itemToDeleteType = '';
 
@@ -134,23 +133,31 @@ class RiwayatService extends Component
         'selectedBarangId' => 'required_if:itemType,barang|exists:barangs,id',
         'itemJumlah' => 'required_if:itemType,barang|integer|min:1',
         'itemHargaJual' => 'required_if:itemType,barang|numeric|min:0',
+        
+        // FIXED: Proper jasa validation rules
         'namaJasaBaru' => 'required_when:activeTab,jasa|string|max:255',
         'hargaJasaBaru' => 'required_when:activeTab,jasa|numeric|min:0',
         'keteranganJasaBaru' => 'nullable|string|max:500',
+        
+        // Manual item rules
         'nama_barang_manual' => 'required_when:activeTab,manual|string|max:255',
         'jumlah_manual' => 'required_when:activeTab,manual|integer|min:1',
         'satuan_manual' => 'required_when:activeTab,manual|string|max:20',
         'harga_jual_manual' => 'required_when:activeTab,manual|numeric|min:0',
         'harga_beli_manual' => 'required_when:activeTab,manual|numeric|min:0',
+        
         'editItemJumlah' => 'required|integer|min:1',
         'editItemHargaJual' => 'required|numeric|min:0',
         'editItemHargaBeli' => 'required|numeric|min:0',
         'editNamaJasa' => 'required|string|max:255',
         'editHargaJasa' => 'required|numeric|min:0',
         'editKeteranganJasa' => 'nullable|string',
+        
+        // Edit manual item rules
         'editNamaBarangManual' => 'required|string|max:255',
         'editSatuanManual' => 'required|string|max:20',
         'editKeteranganManual' => 'nullable|string',
+        
         'jumlahBayar' => 'required|numeric|min:1',
         'metodePembayaran' => 'required|in:tunai,transfer',
         'tanggalBayar' => 'required|date',
@@ -172,11 +179,15 @@ class RiwayatService extends Component
         'itemJumlah.min' => 'Jumlah minimal 1',
         'itemHargaJual.required_if' => 'Harga jual harus diisi',
         'itemHargaJual.min' => 'Harga jual tidak boleh negatif',
+        
+        // FIXED: Jasa validation messages
         'namaJasaBaru.required_when' => 'Nama jasa harus diisi',
         'namaJasaBaru.max' => 'Nama jasa maksimal 255 karakter',
         'hargaJasaBaru.required_when' => 'Harga jasa harus diisi',
         'hargaJasaBaru.min' => 'Harga jasa tidak boleh negatif',
         'keteranganJasaBaru.max' => 'Keterangan maksimal 500 karakter',
+        
+        // Manual item messages
         'nama_barang_manual.required_when' => 'Nama barang manual harus diisi',
         'nama_barang_manual.max' => 'Nama barang maksimal 255 karakter',
         'jumlah_manual.required_when' => 'Jumlah barang manual harus diisi',
@@ -224,6 +235,8 @@ class RiwayatService extends Component
         $this->resetPage();
     }
 
+    // FIXED: Don't force price, just suggest it
+
     public function updatedJumlahBayar($value)
     {
         if ($this->selectedTransaction && $value > $this->selectedTransaction->sisa_pembayaran) {
@@ -252,7 +265,7 @@ class RiwayatService extends Component
         $this->resetPage();
     }
 
-    public function showDetail($transactionId)
+public function showDetail($transactionId)
     {
         $this->selectedTransaction = TransaksiService::with([
             'pelangganMobil',
@@ -265,14 +278,16 @@ class RiwayatService extends Component
             $this->showDetailModal = true;
         }
     }
-    
+
     public function showEdit($transactionId)
     {
         $this->selectedTransaction = TransaksiService::with([
             'pelangganMobil',
             'serviceBarangItems.barang',
             'serviceJasaItems',
-            'servicePayments',
+            'servicePayments' => function($query) {
+
+            }
         ])->find($transactionId);
 
         if ($this->selectedTransaction) {
@@ -288,7 +303,7 @@ class RiwayatService extends Component
 
     public function openPaymentDetail($paymentId)
     {
-        $this->resetPaymentDetailState();
+        $this->resetPaymentForm(); // untuk reset input dan flag
         $this->selectedPayment = ServicePayment::findOrFail($paymentId);
         $this->editingPayment = false;
         $this->showPaymentDetailModal = true;
@@ -297,9 +312,11 @@ class RiwayatService extends Component
     public function editPayment($paymentId)
     {
         $payment = ServicePayment::findOrFail($paymentId);
+
         $this->selectedPayment = $payment;
         $this->editingPayment = true;
         $this->showPaymentDetailModal = true;
+
         $this->editPaymentAmount = $payment->jumlah_bayar;
         $this->editPaymentDate = $payment->tanggal_bayar;
         $this->editPaymentMethod = $payment->metode_pembayaran;
@@ -307,11 +324,29 @@ class RiwayatService extends Component
         $this->currentPaymentProof = $payment->bukti_bayar;
     }
 
-    /**
-     * Reset only the payment detail modal state (selected payment + editing flags).
-     * Does NOT touch the add-payment form fields (jumlahBayar, buktiPembayaran, etc.).
-     */
-    private function resetPaymentDetailState()
+    public function resetModalStates()
+    {
+        $this->reset([
+            'showDetailModal',
+            'showEditModal',
+            'showAddItemModal',
+            'showEditItemModal',
+            'showDeleteItemModal',
+            'showAddPaymentModal',
+            'showEditPaymentModal',
+            'showDeletePaymentModal',
+            'selectedTransaction',
+            'selectedTransactionId',
+            'editStatusPekerjaan',
+            'editStatusPembayaran',
+            'editDiagnosa',
+            'editPekerjaanDilakukan',
+            'editKeterangan',
+        ]);
+    }
+
+
+    public function resetPaymentForm()
     {
         $this->editingPayment = false;
         $this->editPaymentAmount = null;
@@ -324,30 +359,11 @@ class RiwayatService extends Component
         $this->showPaymentDetailModal = false;
     }
 
-    /**
-     * Reset add-payment form fields only (used mid-flow after a partial payment).
-     */
-    private function resetAddPaymentFields()
-    {
-        $this->buktiPembayaran = null;
-        $this->keteranganPembayaran = '';
-        $this->resetErrorBag(['buktiPembayaran', 'keteranganPembayaran', 'jumlahBayar']);
-    }
-
-    /**
-     * @deprecated Use resetPaymentDetailState() or resetAddPaymentFields() instead.
-     * Kept temporarily to avoid breaking any existing view calls; delegates internally.
-     */
-    public function resetPaymentForm()
-    {
-        $this->resetPaymentDetailState();
-    }
-
     public function showAddItem($transactionId)
     {
         $this->selectedTransactionId = $transactionId;
         $this->selectedTransaction = TransaksiService::find($transactionId);
-        $this->resetItemForm();
+        $this->resetAddItemForm();
         $this->loadAvailableBarangs();
         $this->showAddItemModal = true;
     }
@@ -355,10 +371,12 @@ class RiwayatService extends Component
     public function showPayment($transactionId)
     {
         $this->selectedTransactionId = $transactionId;
-        $this->selectedTransaction = TransaksiService::with([
-            'servicePayments' => fn($q) => $q->orderBy('id', 'desc')->orderBy('tanggal_bayar', 'desc'),
-            'pelangganMobil',
-        ])->find($transactionId);
+        $this->selectedTransaction = TransaksiService::with(['servicePayments' => function($query) {
+            // FIXED: Sort by creation date, then by payment date
+            $query->orderBy('id', 'desc')
+                  ->orderBy('tanggal_bayar', 'desc');
+        }, 'pelangganMobil'])
+            ->find($transactionId);
 
         if ($this->selectedTransaction) {
             $sisaPembayaran = $this->selectedTransaction->sisa_pembayaran;
@@ -377,6 +395,7 @@ class RiwayatService extends Component
         $this->showDeleteConfirmModal = true;
     }
 
+    // NEW: Edit item functions
     public function editBarangItem($itemId)
     {
         $item = ServiceBarangItem::with('barang')->find($itemId);
@@ -489,7 +508,7 @@ class RiwayatService extends Component
                 'invoice' => $transaction->invoice
             ]);
 
-            $this->closeDCModal();
+            $this->closeModal();
             session()->flash('message', 'Item berhasil diupdate!');
 
         } catch (\Exception $e) {
@@ -498,8 +517,6 @@ class RiwayatService extends Component
             $this->addError('general', 'Gagal mengupdate item: ' . $e->getMessage());
         }
     }
-
-    
 
     public function confirmDeleteItem($itemId, $type)
     {
@@ -572,7 +589,7 @@ class RiwayatService extends Component
                 'invoice' => $transaction->invoice
             ]);
 
-            $this->closeDCModal();
+            $this->closeModal();
             session()->flash('message', 'Item berhasil dihapus!');
 
         } catch (\Exception $e) {
@@ -730,7 +747,7 @@ class RiwayatService extends Component
                 }
 
                 // Reduce stock using FIFO
-                $usedPembelians = $this->reduceStockFifos($this->selectedBarangId, $this->itemJumlah);
+                $usedPembelians = $this->reduceStockFifo($this->selectedBarangId, $this->itemJumlah);
 
                 // Create service barang items
                 foreach ($usedPembelians as $used) {
@@ -853,23 +870,42 @@ class RiwayatService extends Component
         $this->addItemToTransaction();
     }
 
+    /**
+     * Recalculate transaction totals to ensure accuracy
+     */
     private function recalculateTransactionTotals($transaction)
     {
-        $totalBarang = ServiceBarangItem::where('transaksi_service_id', $transaction->id)->sum('subtotal');
-        $totalJasa = ServiceJasaItem::where('transaksi_service_id', $transaction->id)->sum('subtotal');
+        // Recalculate total barang
+        $totalBarang = ServiceBarangItem::where('transaksi_service_id', $transaction->id)
+            ->sum('subtotal');
+
+        // Recalculate total jasa
+        $totalJasa = ServiceJasaItem::where('transaksi_service_id', $transaction->id)
+            ->sum('subtotal');
+
+        // Calculate subtotal before discount
         $subtotalSebelumDiskon = $totalBarang + $totalJasa;
 
         $diskonAmount = 0;
         if ($transaction->diskon > 0) {
-            $diskonAmount = $transaction->tipe_diskon === 'persentase'
-                ? ($subtotalSebelumDiskon * $transaction->diskon) / 100
-                : $transaction->diskon;
+            if ($transaction->tipe_diskon === 'persentase') {
+                $diskonAmount = ($subtotalSebelumDiskon * $transaction->diskon) / 100;
+            } else {
+                $diskonAmount = $transaction->diskon;
+            }
         }
 
+        // Calculate total after discount
         $totalKeseluruhan = $subtotalSebelumDiskon - $diskonAmount;
-        $totalSudahDibayar = ServicePayment::where('transaksi_service_id', $transaction->id)->sum('jumlah_bayar');
+
+        // Recalculate total sudah dibayar
+        $totalSudahDibayar = ServicePayment::where('transaksi_service_id', $transaction->id)
+            ->sum('jumlah_bayar');
+
+        // Calculate sisa pembayaran
         $sisaPembayaran = $totalKeseluruhan - $totalSudahDibayar;
 
+        // Determine payment status
         $statusPembayaran = 'belum';
         if ($sisaPembayaran <= 0) {
             $statusPembayaran = 'lunas';
@@ -878,18 +914,19 @@ class RiwayatService extends Component
             $statusPembayaran = 'sebagian';
         }
 
+        // Update transaction with recalculated values
         $transaction->update([
             'total_barang' => $totalBarang,
             'total_jasa' => $totalJasa,
-            'subtotal_sebelum_diskon' => $subtotalSebelumDiskon,
-            'diskon_amount' => $diskonAmount,
+            'subtotal_sebelum_diskon' => $subtotalSebelumDiskon, // Added subtotal before discount
+            'diskon_amount' => $diskonAmount, // Added discount amount
             'total_keseluruhan' => $totalKeseluruhan,
             'total_sudah_dibayar' => $totalSudahDibayar,
             'sisa_pembayaran' => $sisaPembayaran,
             'status_pembayaran' => $statusPembayaran,
         ]);
 
-        Log::info('Transaction totals recalculated', [
+        Log::info('Transaction totals recalculated with discount', [
             'invoice' => $transaction->invoice,
             'total_barang' => $totalBarang,
             'total_jasa' => $totalJasa,
@@ -900,14 +937,14 @@ class RiwayatService extends Component
             'total_keseluruhan' => $totalKeseluruhan,
             'total_sudah_dibayar' => $totalSudahDibayar,
             'sisa_pembayaran' => $sisaPembayaran,
-            'status_pembayaran' => $statusPembayaran,
+            'status_pembayaran' => $statusPembayaran
         ]);
     }
 
     public function showEditDiscount($transactionId)
     {
         $this->selectedTransaction = TransaksiService::find($transactionId);
-
+        
         if ($this->selectedTransaction) {
             $this->selectedTransactionId = $transactionId;
             $this->editDiskon = $this->selectedTransaction->diskon ?? 0;
@@ -928,6 +965,7 @@ class RiwayatService extends Component
             'editDiskon.min' => 'Diskon tidak boleh negatif.',
         ]);
 
+        // Validate percentage discount
         if ($this->editTipeDiskon === 'persentase' && $this->editDiskon > 100) {
             $this->addError('editDiskon', 'Diskon persentase tidak boleh lebih dari 100%.');
             return;
@@ -937,15 +975,19 @@ class RiwayatService extends Component
             DB::beginTransaction();
 
             $transaction = TransaksiService::findOrFail($this->selectedTransactionId);
+            
+            // Update discount
             $transaction->update([
                 'diskon' => $this->editDiskon,
                 'tipe_diskon' => $this->editTipeDiskon,
             ]);
 
+            // Recalculate totals with new discount
             $this->recalculateTransactionTotals($transaction);
 
             DB::commit();
 
+            // Refresh the selected transaction
             $this->selectedTransaction->refresh();
             $this->selectedTransaction->load(['servicePayments', 'pelangganMobil']);
 
@@ -984,6 +1026,7 @@ class RiwayatService extends Component
             'manualDiskon.min' => 'Diskon tidak boleh negatif.',
         ]);
 
+        // Validate percentage discount
         if ($this->applyDiscountToPayment && $this->manualTipeDiskon === 'persentase' && $this->manualDiskon > 100) {
             $this->addError('manualDiskon', 'Diskon persentase tidak boleh lebih dari 100%.');
             return;
@@ -999,256 +1042,629 @@ class RiwayatService extends Component
                     'diskon' => $this->manualDiskon,
                     'tipe_diskon' => $this->manualTipeDiskon,
                 ]);
+
+                // Recalculate totals with new discount
                 $this->recalculateTransactionTotals($transaction);
-                $transaction->refresh();
+                $transaction->refresh(); // Refresh to get updated totals
             }
 
+            // Validate payment amount doesn't exceed remaining balance
             if ($this->jumlahBayar > $transaction->sisa_pembayaran) {
                 throw new \Exception('Jumlah pembayaran melebihi sisa tagihan. Sisa: Rp' . number_format($transaction->sisa_pembayaran, 0, ',', '.'));
             }
 
+            // DEBUGGING: Log file info before processing
+            $fileInfo = null;
+            if ($this->buktiPembayaran) {
+                $fileInfo = [
+                    'original_name' => $this->buktiPembayaran->getClientOriginalName(),
+                    'size' => $this->buktiPembayaran->getSize(),
+                    'mime_type' => $this->buktiPembayaran->getMimeType(),
+                    'extension' => $this->buktiPembayaran->getClientOriginalExtension(),
+                    'is_valid' => $this->buktiPembayaran->isValid(),
+                ];
+                Log::info('File info before upload', $fileInfo);
+            }
+
+            // FIXED: Handle file upload with detailed debugging
             $buktiPath = null;
             if ($this->buktiPembayaran && $this->buktiPembayaran->isValid()) {
-                $extension = $this->buktiPembayaran->getClientOriginalExtension();
-                $fileName = 'bukti_' . $transaction->invoice . '_' . time() . '_' . uniqid() . '.' . $extension;
-
-                $buktiPath = $this->buktiPembayaran->storeAs('payment-proofs', $fileName, 'public');
-
-                if (!Storage::disk('public')->exists($buktiPath)) {
-                    throw new \Exception('File gagal disimpan ke storage');
-                }
-
-                $savedFileSize = Storage::disk('public')->size($buktiPath);
-                if ($savedFileSize === false || $savedFileSize === 0) {
-                    throw new \Exception('File tersimpan tapi size 0 atau corrupt');
+                try {
+                    // Generate unique filename
+                    $extension = $this->buktiPembayaran->getClientOriginalExtension();
+                    $fileName = 'bukti_' . $transaction->invoice . '_' . time() . '_' . uniqid() . '.' . $extension;
+                    
+                    Log::info('Attempting file upload', [
+                        'invoice' => $transaction->invoice,
+                        'filename' => $fileName,
+                        'disk' => 'public',
+                        'directory' => 'payment-proofs'
+                    ]);
+                    
+                    // Store file
+                    $buktiPath = $this->buktiPembayaran->storeAs('payment-proofs', $fileName, 'public');
+                    
+                    Log::info('File upload result', [
+                        'bukti_path' => $buktiPath,
+                        'full_path' => storage_path('app/public/' . $buktiPath),
+                        'file_exists' => Storage::disk('public')->exists($buktiPath),
+                        'file_size_on_disk' => Storage::disk('public')->size($buktiPath),
+                        'file_url' => Storage::disk('public')->url($buktiPath)
+                    ]);
+                    
+                    // Verify file was actually saved
+                    if (!Storage::disk('public')->exists($buktiPath)) {
+                        throw new \Exception('File gagal disimpan ke storage - file not found after upload');
+                    }
+                    
+                    // Additional verification
+                    $savedFileSize = Storage::disk('public')->size($buktiPath);
+                    if ($savedFileSize === false || $savedFileSize === 0) {
+                        throw new \Exception('File tersimpan tapi size 0 atau corrupt');
+                    }
+                    
+                } catch (\Exception $fileException) {
+                    Log::error('File upload failed', [
+                        'invoice' => $transaction->invoice,
+                        'error' => $fileException->getMessage(),
+                        'trace' => $fileException->getTraceAsString(),
+                        'file_info' => $fileInfo
+                    ]);
+                    throw new \Exception('Gagal mengupload bukti pembayaran: ' . $fileException->getMessage());
                 }
             }
 
+            // DEBUGGING: Log data before database insert
+            $paymentData = [
+                'transaksi_service_id' => $this->selectedTransactionId,
+                'tanggal_bayar' => $this->tanggalBayar,
+                'jumlah_bayar' => $this->jumlahBayar,
+                'metode_pembayaran' => $this->metodePembayaran,
+                'keterangan' => $this->keteranganPembayaran ?: 'Pembayaran tambahan',
+                'bukti_bayar' => $buktiPath, // CRITICAL: Make sure this is the correct column name
+                'kasir' => Auth::user()->name,
+            ];
+
+            Log::info('Payment data before insert', $paymentData);
+
+            // FIXED: Create payment record with explicit field mapping
             $payment = new ServicePayment();
             $payment->transaksi_service_id = $this->selectedTransactionId;
             $payment->tanggal_bayar = $this->tanggalBayar;
             $payment->jumlah_bayar = $this->jumlahBayar;
             $payment->metode_pembayaran = $this->metodePembayaran;
             $payment->keterangan = $this->keteranganPembayaran ?: 'Pembayaran tambahan';
-            $payment->bukti_bayar = $buktiPath;
-            $payment->kasir = Auth::user()->name;
-            $payment->save();
+            $payment->bukti_bayar = $buktiPath; // EXPLICIT ASSIGNMENT
+            $payment->kasir = Auth::user()->name;   
+            
+            $saveResult = $payment->save();
 
+            Log::info('Payment save result', [
+                'save_success' => $saveResult,
+                'payment_id' => $payment->id,
+                'bukti_bayar_in_db' => $payment->bukti_bayar,
+                'fresh_from_db' => $payment->fresh()->bukti_bayar
+            ]);
+
+            // Verify payment was created successfully with bukti_bayar
             if (!$payment->id) {
-                throw new \Exception('Gagal menyimpan data pembayaran');
+                throw new \Exception('Gagal menyimpan data pembayaran - no payment ID');
             }
 
+            // DEBUGGING: Double-check what's actually in the database
+            $freshPayment = ServicePayment::find($payment->id);
+            Log::info('Fresh payment from DB', [
+                'id' => $freshPayment->id,
+                'bukti_bayar' => $freshPayment->bukti_bayar,
+                'all_attributes' => $freshPayment->getAttributes()
+            ]);
+
+            // Recalculate totals after adding payment
             $this->recalculateTransactionTotals($transaction);
 
             DB::commit();
 
+            // Refresh the selected transaction
             $this->selectedTransaction->refresh();
-            $this->selectedTransaction->load([
-                'servicePayments' => fn($q) => $q->orderBy('id', 'desc')->orderBy('tanggal_bayar', 'desc'),
-                'pelangganMobil',
+            $this->selectedTransaction->load(['servicePayments' => function($query) {
+                $query->orderBy('id', 'desc')->orderBy('tanggal_bayar', 'desc');
+            }, 'pelangganMobil']);
+
+            Log::info('Payment added successfully - FINAL CHECK', [
+                'invoice' => $transaction->invoice,
+                'payment_id' => $payment->id,
+                'bukti_bayar_final' => $payment->fresh()->bukti_bayar,
+                'file_url' => $buktiPath ? Storage::disk('public')->url($buktiPath) : null
             ]);
 
-            $freshTransaction = $transaction->fresh();
             $message = 'Pembayaran berhasil ditambahkan! ';
-            $message .= $freshTransaction->status_pembayaran === 'lunas'
-                ? 'Transaksi telah LUNAS.'
-                : 'Sisa pembayaran: Rp' . number_format($freshTransaction->sisa_pembayaran, 0, ',', '.');
+            if ($transaction->fresh()->status_pembayaran === 'lunas') {
+                $message .= 'Transaksi telah LUNAS.';
+            } else {
+                $message .= 'Sisa pembayaran: Rp' . number_format($transaction->fresh()->sisa_pembayaran, 0, ',', '.');
+            }
 
             $this->dispatch('payment-added', [
                 'invoice' => $transaction->invoice,
                 'amount' => $this->jumlahBayar,
-                'status' => $freshTransaction->status_pembayaran,
+                'status' => $transaction->fresh()->status_pembayaran,
                 'has_proof' => !is_null($buktiPath),
                 'payment_id' => $payment->id,
-                'proof_url' => $buktiPath ? Storage::disk('public')->url($buktiPath) : null,
+                'proof_url' => $buktiPath ? Storage::disk('public')->url($buktiPath) : null
             ]);
 
-            if ($freshTransaction->status_pembayaran !== 'lunas') {
-                $this->resetAddPaymentFields();
-                $this->jumlahBayar = $freshTransaction->sisa_pembayaran;
+            // Reset form but keep modal open if not fully paid
+            if ($transaction->fresh()->status_pembayaran !== 'lunas') {
+                $this->resetPaymentFormFields();
+                $this->jumlahBayar = $transaction->fresh()->sisa_pembayaran;
             }
 
+            session()->flash('message', $message);
+
+            // Reset manual discount fields
             $this->manualDiskon = 0;
             $this->manualTipeDiskon = 'nominal';
             $this->applyDiscountToPayment = false;
 
-            session()->flash('message', $message);
-
         } catch (\Exception $e) {
             DB::rollBack();
-
+            
+            // Clean up uploaded file if transaction failed
             if (isset($buktiPath) && $buktiPath && Storage::disk('public')->exists($buktiPath)) {
                 Storage::disk('public')->delete($buktiPath);
+                Log::info('Cleaned up orphaned file after transaction failure', ['path' => $buktiPath]);
             }
-
+            
             Log::error('Error adding payment: ' . $e->getMessage(), [
                 'transaction_id' => $this->selectedTransactionId,
                 'amount' => $this->jumlahBayar,
-                'trace' => $e->getTraceAsString(),
+                'has_file' => !is_null($this->buktiPembayaran),
+                'debug_info' => $this->debugInfo ?? [],
+                'trace' => $e->getTraceAsString()
             ]);
 
             $this->addError('jumlahBayar', 'Gagal menambah pembayaran: ' . $e->getMessage());
         }
-
         $this->closeModal();
     }
 
+    public function closeDiscountModal()
+    {
+        $this->showDiscountModal = false;
+        $this->editingDiscount = false;
+        $this->editDiskon = 0;
+        $this->editTipeDiskon = 'nominal';
+        $this->resetErrorBag();
+    }
+
+    // DEBUGGING METHOD: Call this to check database structure
+    public function debugDatabaseStructure()
+    {
+        try {
+            // Check table structure
+            $columns = DB::select("DESCRIBE service_payments");
+            
+            // Check if bukti_bayar column exists
+            $buktiColumn = collect($columns)->firstWhere('Field', 'bukti_bayar');
+            
+            // Get sample payment record
+            $samplePayment = DB::table('service_payments')->first();
+            
+            $this->debugInfo = [
+                'table_columns' => $columns,
+                'bukti_bayar_column_exists' => !is_null($buktiColumn),
+                'bukti_bayar_column_details' => $buktiColumn,
+                'sample_payment' => $samplePayment,
+                'storage_disk_config' => config('filesystems.disks.public'),
+                'storage_path' => storage_path('app/public'),
+                'public_path' => public_path('storage')
+            ];
+            
+            $this->showDebugModal = true;
+            
+            Log::info('Database structure debug', $this->debugInfo);
+            
+        } catch (\Exception $e) {
+            Log::error('Debug failed: ' . $e->getMessage());
+            $this->addError('debug', 'Debug gagal: ' . $e->getMessage());
+        }
+    }
+
+    // FIXED: View payment proof with better error handling
     public function viewPaymentProof($paymentId)
     {
         try {
             $payment = ServicePayment::find($paymentId);
-
+            
             if (!$payment) {
                 throw new \Exception('Payment record not found');
             }
+
+            Log::info('Viewing payment proof', [
+                'payment_id' => $paymentId,
+                'bukti_bayar_from_db' => $payment->bukti_bayar,
+                'bukti_bayar_is_null' => is_null($payment->bukti_bayar),
+                'bukti_bayar_is_empty' => empty($payment->bukti_bayar)
+            ]);
 
             if (!$payment->bukti_bayar || empty($payment->bukti_bayar)) {
                 session()->flash('error', 'Tidak ada bukti pembayaran untuk record ini');
                 return;
             }
 
+            // Check if file exists in storage
             if (!Storage::disk('public')->exists($payment->bukti_bayar)) {
+                Log::warning('Payment proof file not found in storage', [
+                    'payment_id' => $paymentId,
+                    'expected_path' => $payment->bukti_bayar,
+                    'full_path' => storage_path('app/public/' . $payment->bukti_bayar),
+                    'file_exists_check' => file_exists(storage_path('app/public/' . $payment->bukti_bayar))
+                ]);
+                
                 session()->flash('error', 'File bukti pembayaran tidak ditemukan di storage');
                 return;
             }
 
             $url = Storage::disk('public')->url($payment->bukti_bayar);
+            
+            Log::info('Payment proof URL generated', [
+                'payment_id' => $paymentId,
+                'file_path' => $payment->bukti_bayar,
+                'generated_url' => $url
+            ]);
 
             $this->dispatch('open-payment-proof', [
                 'url' => $url,
                 'payment_id' => $paymentId,
-                'file_name' => basename($payment->bukti_bayar),
+                'file_name' => basename($payment->bukti_bayar)
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error viewing payment proof: ' . $e->getMessage(), ['payment_id' => $paymentId]);
+            Log::error('Error viewing payment proof: ' . $e->getMessage(), [
+                'payment_id' => $paymentId
+            ]);
             session()->flash('error', 'Error: ' . $e->getMessage());
         }
     }
 
-    public function updatePayment($paymentId)
+    // UTILITY: Method to fix existing payments without bukti_bayar
+    public function fixMissingPaymentProofs()
     {
-        $this->validate([
-            'editPaymentAmount' => 'required|numeric|min:1',
-            'editPaymentMethod' => 'required|in:tunai,transfer',
-            'editPaymentDate' => 'required|date',
-            'editPaymentNote' => 'nullable|string',
-            'editPaymentProof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
-        ]);
-
-        $oldAmount = null;
-
         try {
             DB::beginTransaction();
 
-            $payment = ServicePayment::find($paymentId);
-            if (!$payment) {
-                throw new \Exception('Data pembayaran tidak ditemukan');
+            // Find payments where files exist in storage but bukti_bayar is null
+            $paymentsToFix = ServicePayment::whereNull('bukti_bayar')
+                ->orWhere('bukti_bayar', '')
+                ->get();
+
+            $fixed = 0;
+            $storageFiles = Storage::disk('public')->files('payment-proofs');
+
+            foreach ($paymentsToFix as $payment) {
+                // Try to find matching file based on transaction invoice
+                $transaction = TransaksiService::find($payment->transaksi_service_id);
+                if (!$transaction) continue;
+
+                $matchingFiles = array_filter($storageFiles, function($file) use ($transaction) {
+                    return strpos(basename($file), $transaction->invoice) !== false;
+                });
+
+                if (!empty($matchingFiles)) {
+                    $fileToAssign = reset($matchingFiles); // Get first matching file
+                    $payment->update(['bukti_bayar' => $fileToAssign]);
+                    $fixed++;
+                    
+                    Log::info('Fixed missing bukti_bayar', [
+                        'payment_id' => $payment->id,
+                        'assigned_file' => $fileToAssign
+                    ]);
+                }
             }
 
-            $transaction = TransaksiService::find($payment->transaksi_service_id);
-            if (!$transaction) {
-                throw new \Exception('Transaksi tidak ditemukan');
-            }
+            DB::commit();
+            
+            session()->flash('message', "Berhasil memperbaiki {$fixed} payment records");
+            
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Error fixing payment proofs: ' . $e->getMessage());
+            session()->flash('error', 'Gagal memperbaiki: ' . $e->getMessage());
+        }
+    }
 
-            $oldAmount = $payment->jumlah_bayar;
-            $newAmount = $this->editPaymentAmount;
-            $maxAllowedPayment = $oldAmount + $transaction->sisa_pembayaran;
+    public function updatePayment($paymentId)
+{
+    $this->validate([
+        'editPaymentAmount' => 'required|numeric|min:1',
+        'editPaymentMethod' => 'required|in:tunai,transfer',
+        'editPaymentDate' => 'required|date',
+        'editPaymentNote' => 'nullable|string',
+        'editPaymentProof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+    ]);
 
-            if ($newAmount > $maxAllowedPayment) {
-                throw new \Exception('Jumlah bayar melebihi maksimal yang diizinkan (Rp' . number_format($maxAllowedPayment, 0, ',', '.') . ')');
-            }
+    try {
+        DB::beginTransaction();
 
-            $oldBuktiPath = $payment->bukti_bayar;
-            $buktiPath = $oldBuktiPath;
-            $newFileUploaded = false;
+        // Get payment record
+        $payment = ServicePayment::find($paymentId);
+        if (!$payment) {
+            throw new \Exception('Data pembayaran tidak ditemukan');
+        }
 
-            if ($this->editPaymentProof && $this->editPaymentProof->isValid()) {
+        // Get transaction to validate payment amount
+        $transaction = TransaksiService::find($payment->transaksi_service_id);
+        if (!$transaction) {
+            throw new \Exception('Transaksi tidak ditemukan');
+        }
+
+        $oldAmount = $payment->jumlah_bayar;
+        $newAmount = $this->editPaymentAmount;
+        $amountDifference = $newAmount - $oldAmount;
+
+        // Calculate maximum allowed payment (current payment + remaining balance)
+        $maxAllowedPayment = $oldAmount + $transaction->sisa_pembayaran;
+        
+        if ($newAmount > $maxAllowedPayment) {
+            throw new \Exception('Jumlah bayar melebihi maksimal yang diizinkan (Rp' . number_format($maxAllowedPayment, 0, ',', '.') . ')');
+        }
+
+        // DEBUGGING: Log file info before processing
+        $fileInfo = null;
+        if ($this->editPaymentProof) {
+            $fileInfo = [
+                'original_name' => $this->editPaymentProof->getClientOriginalName(),
+                'size' => $this->editPaymentProof->getSize(),
+                'mime_type' => $this->editPaymentProof->getMimeType(),
+                'extension' => $this->editPaymentProof->getClientOriginalExtension(),
+                'is_valid' => $this->editPaymentProof->isValid(),
+            ];
+            Log::info('File info before upload (update)', $fileInfo);
+        }
+
+        // FIXED: Handle file upload - Keep existing proof or set new one
+        $buktiPath = $payment->bukti_bayar; // Keep existing proof by default (even if null)
+        $oldBuktiPath = $payment->bukti_bayar; // Store old path for cleanup (can be null)
+        $newFileUploaded = false;
+        
+        if ($this->editPaymentProof && $this->editPaymentProof->isValid()) {
+            try {
+                // Generate unique filename
                 $extension = $this->editPaymentProof->getClientOriginalExtension();
                 $fileName = 'bukti_' . $transaction->invoice . '_' . time() . '_' . uniqid() . '.' . $extension;
+                
+                Log::info('Attempting file upload (update)', [
+                    'payment_id' => $payment->id,
+                    'invoice' => $transaction->invoice,
+                    'filename' => $fileName,
+                    'disk' => 'public',
+                    'directory' => 'payment-proofs',
+                    'old_file' => $oldBuktiPath,
+                    'old_file_is_null' => is_null($oldBuktiPath)
+                ]);
+                
+                // Store new file
                 $buktiPath = $this->editPaymentProof->storeAs('payment-proofs', $fileName, 'public');
                 $newFileUploaded = true;
-
+                
+                Log::info('File upload result (update)', [
+                    'bukti_path' => $buktiPath,
+                    'full_path' => storage_path('app/public/' . $buktiPath),
+                    'file_exists' => Storage::disk('public')->exists($buktiPath),
+                    'file_size_on_disk' => Storage::disk('public')->size($buktiPath),
+                    'file_url' => Storage::disk('public')->url($buktiPath)
+                ]);
+                
+                // Verify file was actually saved
                 if (!Storage::disk('public')->exists($buktiPath)) {
-                    throw new \Exception('File gagal disimpan ke storage');
+                    throw new \Exception('File gagal disimpan ke storage - file not found after upload');
                 }
-
+                
+                // Additional verification
                 $savedFileSize = Storage::disk('public')->size($buktiPath);
                 if ($savedFileSize === false || $savedFileSize === 0) {
                     throw new \Exception('File tersimpan tapi size 0 atau corrupt');
                 }
-            }
-
-            $payment->jumlah_bayar = $this->editPaymentAmount;
-            $payment->metode_pembayaran = $this->editPaymentMethod;
-            $payment->tanggal_bayar = $this->editPaymentDate;
-            $payment->keterangan = $this->editPaymentNote ?: $payment->keterangan;
-            $payment->bukti_bayar = $buktiPath;
-            $payment->save();
-
-            if ($newFileUploaded && !empty($oldBuktiPath) && $oldBuktiPath !== $buktiPath
-                && Storage::disk('public')->exists($oldBuktiPath)) {
-                Storage::disk('public')->delete($oldBuktiPath);
-            }
-
-            $this->recalculateTransactionTotals($transaction);
-
-            DB::commit();
-
-            if (isset($this->selectedTransaction)) {
-                $this->selectedTransaction->refresh();
-                $this->selectedTransaction->load([
-                    'servicePayments' => fn($q) => $q->orderBy('id', 'desc')->orderBy('tanggal_bayar', 'desc'),
-                    'pelangganMobil',
+                
+            } catch (\Exception $fileException) {
+                Log::error('File upload failed (update)', [
+                    'payment_id' => $payment->id,
+                    'invoice' => $transaction->invoice,
+                    'error' => $fileException->getMessage(),
+                    'trace' => $fileException->getTraceAsString(),
+                    'file_info' => $fileInfo
                 ]);
+                throw new \Exception('Gagal mengupload bukti pembayaran: ' . $fileException->getMessage());
             }
-
-            $freshTransaction = $transaction->fresh();
-            $message = 'Pembayaran berhasil diupdate! ';
-            if ($newFileUploaded) {
-                $message .= is_null($oldBuktiPath)
-                    ? 'Bukti pembayaran berhasil ditambahkan. '
-                    : 'Bukti pembayaran berhasil diperbarui. ';
-            }
-            $message .= $freshTransaction->status_pembayaran === 'lunas'
-                ? 'Transaksi telah LUNAS.'
-                : 'Sisa pembayaran: Rp' . number_format($freshTransaction->sisa_pembayaran, 0, ',', '.');
-
-            $this->dispatch('payment-updated', [
-                'payment_id' => $payment->id,
-                'amount_difference' => $newAmount - $oldAmount,
-                'new_amount' => $this->editPaymentAmount,
-                'old_amount' => $oldAmount,
-                'status' => $freshTransaction->status_pembayaran,
-                'has_new_proof' => $newFileUploaded,
-                'proof_url' => $buktiPath ? Storage::disk('public')->url($buktiPath) : null,
-            ]);
-
-            $this->closeDCModal();
-            session()->flash('message', $message);
-
-        } catch (\Exception $e) {
-            DB::rollback();
-
-            if (isset($newFileUploaded) && $newFileUploaded
-                && isset($buktiPath) && $buktiPath
-                && isset($oldBuktiPath) && $buktiPath !== $oldBuktiPath
-                && Storage::disk('public')->exists($buktiPath)) {
-                Storage::disk('public')->delete($buktiPath);
-            }
-
-            Log::error('Error updating payment: ' . $e->getMessage(), [
-                'payment_id' => $paymentId,
-                'old_amount' => $oldAmount,
-                'new_amount' => $this->editPaymentAmount,
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            $this->addError('general', 'Gagal mengupdate pembayaran: ' . $e->getMessage());
         }
+
+        // DEBUGGING: Log data before database update
+        $updateData = [
+            'payment_id' => $payment->id,
+            'old_amount' => $oldAmount,
+            'new_amount' => $newAmount,
+            'amount_difference' => $amountDifference,
+            'jumlah_bayar' => $this->editPaymentAmount,
+            'metode_pembayaran' => $this->editPaymentMethod,
+            'tanggal_bayar' => $this->editPaymentDate,
+            'keterangan' => $this->editPaymentNote ?: $payment->keterangan,
+            'bukti_bayar' => $buktiPath, // Can be null, existing path, or new path
+            'old_bukti_path' => $oldBuktiPath,
+            'new_file_uploaded' => $newFileUploaded,
+            'old_file_was_null' => is_null($oldBuktiPath)
+        ];
+
+        Log::info('Payment update data before save', $updateData);
+
+        // FIXED: Update payment record with explicit field assignment
+        // This handles cases where bukti_bayar was previously null
+        $payment->jumlah_bayar = $this->editPaymentAmount;
+        $payment->metode_pembayaran = $this->editPaymentMethod;
+        $payment->tanggal_bayar = $this->editPaymentDate;
+        $payment->keterangan = $this->editPaymentNote ?: $payment->keterangan;
+        
+        // CRITICAL FIX: Always set bukti_bayar, even if it was null before
+        // If new file uploaded, use new path
+        // If no new file but editing, keep existing (even if null)
+        $payment->bukti_bayar = $buktiPath;
+        
+        $updateResult = $payment->save();
+
+        Log::info('Payment update result', [
+            'update_success' => $updateResult,
+            'payment_id' => $payment->id,
+            'bukti_bayar_in_db' => $payment->bukti_bayar,
+            'fresh_from_db' => $payment->fresh()->bukti_bayar,
+            'new_file_was_uploaded' => $newFileUploaded
+        ]);
+
+        // Verify payment was updated successfully
+        if (!$updateResult) {
+            throw new \Exception('Gagal mengupdate data pembayaran');
+        }
+
+        // DEBUGGING: Double-check what's actually in the database
+        $freshPayment = ServicePayment::find($payment->id);
+        Log::info('Fresh payment from DB after update', [
+            'id' => $freshPayment->id,
+            'bukti_bayar' => $freshPayment->bukti_bayar,
+            'jumlah_bayar' => $freshPayment->jumlah_bayar,
+            'bukti_bayar_changed' => $freshPayment->bukti_bayar !== $oldBuktiPath,
+            'all_attributes' => $freshPayment->getAttributes()
+        ]);
+
+
+        // FIXED: Delete old file ONLY if:
+        // 1. New file was uploaded successfully
+        // 2. Old file path exists and is not null/empty
+        // 3. Old path is different from new path
+        // 4. Old file actually exists in storage
+        if ($newFileUploaded && 
+            !empty($oldBuktiPath) && 
+            $oldBuktiPath !== $buktiPath && 
+            Storage::disk('public')->exists($oldBuktiPath)) {
+            
+            $deleteResult = Storage::disk('public')->delete($oldBuktiPath);
+            Log::info('Old payment proof deletion attempt', [
+                'payment_id' => $payment->id,
+                'deleted_path' => $oldBuktiPath,
+                'new_path' => $buktiPath,
+                'delete_success' => $deleteResult,
+                'file_existed_before_delete' => true
+            ]);
+        } elseif ($newFileUploaded && !empty($oldBuktiPath)) {
+            Log::info('Old payment proof NOT deleted', [
+                'payment_id' => $payment->id,
+                'old_path' => $oldBuktiPath,
+                'new_path' => $buktiPath,
+                'reason' => 'File does not exist in storage or paths are same'
+            ]);
+        } else {
+            Log::info('No old file to delete', [
+                'payment_id' => $payment->id,
+                'old_path_was_null' => is_null($oldBuktiPath),
+                'new_file_uploaded' => $newFileUploaded
+            ]);
+
+        }
+
+        // Recalculate transaction totals after updating payment
+        $this->recalculateTransactionTotals($transaction);
+
+        DB::commit();
+
+        // Refresh the selected transaction
+        if (isset($this->selectedTransaction)) {
+            $this->selectedTransaction->refresh();
+            $this->selectedTransaction->load(['servicePayments' => function($query) {
+                $query->orderBy('id', 'desc')->orderBy('tanggal_bayar', 'desc');
+            }, 'pelangganMobil']);
+        }
+
+        Log::info('Payment updated successfully - FINAL CHECK', [
+            'payment_id' => $payment->id,
+            'old_amount' => $oldAmount,
+            'new_amount' => $newAmount,
+            'amount_difference' => $amountDifference,
+            'bukti_bayar_final' => $payment->fresh()->bukti_bayar,
+            'file_url' => $buktiPath ? Storage::disk('public')->url($buktiPath) : null,
+            'transaction_status' => $transaction->fresh()->status_pembayaran,
+            'proof_added_to_previously_null' => is_null($oldBuktiPath) && !is_null($buktiPath)
+        ]);
+
+        // FIXED: Enhanced success message
+        $message = 'Pembayaran berhasil diupdate! ';
+        
+        if ($newFileUploaded) {
+            if (is_null($oldBuktiPath)) {
+                $message .= 'Bukti pembayaran berhasil ditambahkan. ';
+            } else {
+                $message .= 'Bukti pembayaran berhasil diperbarui. ';
+            }
+        }
+        
+        if ($transaction->fresh()->status_pembayaran === 'lunas') {
+            $message .= 'Transaksi telah LUNAS.';
+        } else {
+            $message .= 'Sisa pembayaran: Rp' . number_format($transaction->fresh()->sisa_pembayaran, 0, ',', '.');
+        }
+
+        $this->dispatch('payment-updated', [
+            'payment_id' => $payment->id,
+            'amount_difference' => $amountDifference,
+            'new_amount' => $this->editPaymentAmount,
+            'old_amount' => $oldAmount,
+            'status' => $transaction->fresh()->status_pembayaran,
+            'has_new_proof' => $newFileUploaded,
+            'proof_was_added_to_null' => is_null($oldBuktiPath) && !is_null($buktiPath),
+            'proof_url' => $buktiPath ? Storage::disk('public')->url($buktiPath) : null
+        ]);
+
+        $this->closeModal();
+        session()->flash('message', $message);
+
+    } catch (\Exception $e) {
+        DB::rollback();
+        
+        // FIXED: Clean up uploaded file if transaction failed 
+        // (but only if it's a NEW file, don't touch existing files)
+        if ($newFileUploaded && 
+            isset($buktiPath) && 
+            $buktiPath && 
+            $buktiPath !== $oldBuktiPath && 
+            Storage::disk('public')->exists($buktiPath)) {
+            
+            $cleanupResult = Storage::disk('public')->delete($buktiPath);
+            Log::info('Cleaned up orphaned file after update failure', [
+                'path' => $buktiPath,
+                'cleanup_success' => $cleanupResult
+            ]);
+        }
+        
+        Log::error('Error updating payment: ' . $e->getMessage(), [
+            'payment_id' => $paymentId,
+            'old_amount' => $oldAmount ?? null,
+            'new_amount' => $this->editPaymentAmount,
+            'has_file' => !is_null($this->editPaymentProof),
+            'old_bukti_was_null' => isset($oldBuktiPath) ? is_null($oldBuktiPath) : 'unknown',
+            'debug_info' => $this->debugInfo ?? [],
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        $this->addError('general', 'Gagal mengupdate pembayaran: ' . $e->getMessage());
+    }
+}
+
+    
+    // FIXED: Separate method to reset only form fields
+    private function resetPaymentFormFields()
+    {
+        $this->buktiPembayaran = null;
+        $this->keteranganPembayaran = '';
+        $this->resetErrorBag(['buktiPembayaran', 'keteranganPembayaran', 'jumlahBayar']);
     }
 
-    public function deleteTransaction()
+        public function deleteTransaction()
     {
         if (!$this->transactionToDelete) {
             return;
@@ -1264,6 +1680,7 @@ class RiwayatService extends Component
                 throw new \Exception('Transaksi tidak ditemukan');
             }
 
+            // Restore stock for barang items (only for non-manual items)
             foreach ($transaction->serviceBarangItems as $item) {
                 if (!$item->is_manual && $item->pembelian_id) {
                     $pembelian = Pembelian::find($item->pembelian_id);
@@ -1273,23 +1690,26 @@ class RiwayatService extends Component
                 }
             }
 
+            // Delete payment proof files
             foreach ($transaction->servicePayments as $payment) {
                 if ($payment->bukti_bayar && Storage::disk('public')->exists($payment->bukti_bayar)) {
                     Storage::disk('public')->delete($payment->bukti_bayar);
                 }
             }
 
+            // Delete related records
             $transaction->serviceBarangItems()->delete();
             $transaction->serviceJasaItems()->delete();
             $transaction->servicePayments()->delete();
 
+            // Delete transaction
             $invoiceNumber = $transaction->invoice;
             $transaction->delete();
 
             DB::commit();
 
             $this->dispatch('transaction-deleted', ['invoice' => $invoiceNumber]);
-            $this->closeDCModal();
+            $this->closeModal();
             session()->flash('message', 'Transaksi berhasil dihapus!');
 
         } catch (\Exception $e) {
@@ -1304,10 +1724,6 @@ class RiwayatService extends Component
         return redirect()->route('service.invoice', ['id' => $transactionId]);
     }
 
-    /**
-     * Reduce stock using FIFO and decrement jumlah_tersisa in the database.
-     * Returns an array of ['pembelian_id', 'jumlah', 'harga_beli'] consumed.
-     */
     private function reduceStockFifo($barangId, $jumlahDibutuhkan)
     {
         try {
@@ -1394,33 +1810,24 @@ class RiwayatService extends Component
             throw $e;
         }
     }
-
-    /**
-     * Reset all item-related form fields and staged lists.
-     * Single source of truth — replaces both the old resetAddItemForm() and resetItemForm().
-     */
-    public function resetItemForm()
+    
+    public function resetAddItemForm()
     {
-        $this->selectedBarangId = null;
+        $this->selectedBarangId = '';
         $this->itemJumlah = 1;
-        $this->itemHargaJual = null;
+        $this->itemHargaJual = 0; // Reset to 0 so user can input freely
         $this->itemType = 'barang';
-
+        $this->namaJasaBaru = '';
+        $this->hargaJasaBaru = 0;
+        $this->keteranganJasaBaru = '';
+        
+        // FIXED: Reset manual item fields
         $this->nama_barang_manual = '';
         $this->jumlah_manual = 1;
         $this->satuan_manual = 'pcs';
-        $this->harga_jual_manual = null;
-        $this->harga_beli_manual = null;
-
-        $this->namaJasaBaru = '';
-        $this->hargaJasaBaru = null;
-        $this->keteranganJasaBaru = '';
-
-        $this->selectedBarangItems = [];
-        $this->manualItems = [];
-        $this->jasaItems = [];
-        $this->activeTab = 'barang';
-
+        $this->harga_jual_manual = 0;
+        $this->harga_beli_manual = 0;
+        
         $this->resetErrorBag();
     }
 
@@ -1454,90 +1861,105 @@ class RiwayatService extends Component
         $this->selectedTransactionId = null;
         $this->selectedPayment = null;
         $this->transactionToDelete = null;
-
-        $this->resetItemForm();
-        $this->resetPaymentDetailState();
+        $this->resetAddItemForm();
+        $this->resetPaymentForm();
         $this->resetEditItemForm();
+        $this->resetManualItemForm();
         $this->resetErrorBag();
-    }
-    
-    public function closeDCModal()
-    {
-        $this->showDetailModal = true;
-        $this->showDeleteConfirmModal = false;
-        $this->showDeleteItemConfirmModal = false;
-
+        $this->showAddItemModal = false;
+        $this->selectedTransactionId = null;
+        $this->selectedTransaction = null;
         $this->resetItemForm();
-        $this->resetPaymentDetailState();
-        $this->resetEditItemForm();
-        $this->resetErrorBag();
     }
-
-    /**
-     * Shared filter query builder — single source of truth used by both
-     * getOptimizedSummaryStatsProperty and getTransactionsProperty.
-     */
-    private function buildFilteredQuery()
+    public function getOptimizedSummaryStatsProperty()
     {
-        return TransaksiService::query()
+        $query = TransaksiService::query()
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('invoice', 'like', '%' . $this->search . '%')
-                        ->orWhereHas('pelangganMobil', function ($subQ) {
-                            $subQ->where('nama_pelanggan', 'like', '%' . $this->search . '%')
-                                ->orWhere('nopol', 'like', '%' . $this->search . '%');
-                        });
+                    ->orWhereHas('pelangganMobil', function ($subQ) {
+                        $subQ->where('nama_pelanggan', 'like', '%' . $this->search . '%')
+                            ->orWhere('nopol', 'like', '%' . $this->search . '%');
+                    });
                 });
             })
             ->when($this->statusFilter, fn($q) => $q->where('status_pekerjaan', $this->statusFilter))
             ->when($this->paymentFilter, fn($q) => $q->where('status_pembayaran', $this->paymentFilter))
             ->when($this->dateFrom, fn($q) => $q->whereDate('created_at', '>=', $this->dateFrom))
             ->when($this->dateTo, fn($q) => $q->whereDate('created_at', '<=', $this->dateTo));
-    }
 
-    public function getOptimizedSummaryStatsProperty()
-    {
+        $total = $query->count();
+
         return [
-            'total_transaksi' => $this->buildFilteredQuery()->count(),
+            'total_transaksi' => $total,
         ];
     }
 
+
+     /**
+     * Reset summary statistics when filters change
+     */
     public function updatedDateFrom()
     {
         $this->resetPage();
+        // Force recalculation of computed properties
         $this->dispatch('summary-stats-updated');
     }
 
     public function updatedDateTo()
     {
         $this->resetPage();
+        // Force recalculation of computed properties
         $this->dispatch('summary-stats-updated');
     }
 
     public function updatedStatusFilter()
     {
         $this->resetPage();
+        // Force recalculation of computed properties
         $this->dispatch('summary-stats-updated');
     }
 
     public function updatedPaymentFilter()
     {
         $this->resetPage();
+        // Force recalculation of computed properties
         $this->dispatch('summary-stats-updated');
     }
 
     public function getTransactionsProperty()
     {
-        return $this->buildFilteredQuery()
-            ->with(['pelangganMobil'])
-            ->orderBy($this->sortBy, $this->sortDirection)
-            ->paginate(10);
+        $query = TransaksiService::with(['pelangganMobil'])
+            ->when($this->search, function($query) {
+                $query->where(function($q) {
+                    $q->where('invoice', 'like', '%' . $this->search . '%')
+                      ->orWhereHas('pelangganMobil', function($subQ) {
+                          $subQ->where('nama_pelanggan', 'like', '%' . $this->search . '%')
+                               ->orWhere('nopol', 'like', '%' . $this->search . '%');
+                      });
+                });
+            })
+            ->when($this->statusFilter, function($query) {
+                $query->where('status_pekerjaan', $this->statusFilter);
+            })
+            ->when($this->paymentFilter, function($query) {
+                $query->where('status_pembayaran', $this->paymentFilter);
+            })
+            ->when($this->dateFrom, function($query) {
+                $query->whereDate('created_at', '>=', $this->dateFrom);
+            })
+            ->when($this->dateTo, function($query) {
+                $query->whereDate('created_at', '<=', $this->dateTo);
+            })
+            ->orderBy($this->sortBy, $this->sortDirection);
+
+        return $query->paginate(10);
     }
 
     public function render()
     {
         return view('livewire.riwayat-service', [
-            'transactions' => $this->getTransactionsProperty(),
+            'transactions' => $this->getTransactionsProperty()
         ]);
     }
 
@@ -1553,10 +1975,40 @@ class RiwayatService extends Component
     {
         $this->selectedTransactionId = $transactionId;
         $this->selectedTransaction = TransaksiService::find($transactionId);
-        $this->resetItemForm();
+        $this->resetManualItemForm();
         $this->showAddManualItemModal = true;
     }
 
+    public function resetManualItemForm()
+    {
+        $this->nama_barang_manual = '';
+        $this->jumlah_manual = 1;
+        $this->satuan_manual = 'pcs';
+        $this->harga_jual_manual = 0;
+        $this->resetErrorBag(['nama_barang_manual', 'jumlah_manual', 'satuan_manual', 'harga_jual_manual']);
+    }
+     public function resetItemForm()
+    {
+        $this->selectedBarangId = null;
+        $this->itemJumlah = 1;
+        $this->itemHargaJual = null;
+        $this->nama_barang_manual = '';
+        $this->jumlah_manual = 1;
+        $this->satuan_manual = 'pcs';
+        $this->harga_jual_manual = null;
+        $this->harga_beli_manual = null;
+        $this->namaJasaBaru = '';
+        $this->hargaJasaBaru = null;
+        $this->keteranganJasaBaru = '';
+        
+        $this->selectedBarangItems = [];
+        $this->manualItems = [];
+        $this->jasaItems = [];
+        $this->activeTab = 'barang';
+        
+        $this->resetErrorBag();
+    }
+    
     public function addBarangToList()
     {
         $this->validate([
@@ -1572,6 +2024,7 @@ class RiwayatService extends Component
             'itemHargaJual.min' => 'Harga jual tidak boleh negatif',
         ]);
 
+        // Check if barang already added
         foreach ($this->selectedBarangItems as $item) {
             if ($item['barang_id'] == $this->selectedBarangId) {
                 $this->addError('selectedBarangId', 'Barang sudah ditambahkan ke daftar');
@@ -1579,6 +2032,7 @@ class RiwayatService extends Component
             }
         }
 
+        // Check stock availability
         $barang = collect($this->availableBarangs)->firstWhere('id', $this->selectedBarangId);
         if (!$barang) {
             $this->addError('selectedBarangId', 'Barang tidak ditemukan');
@@ -1590,6 +2044,7 @@ class RiwayatService extends Component
             return;
         }
 
+        // Add to list
         $this->selectedBarangItems[] = [
             'barang_id' => $this->selectedBarangId,
             'nama' => $barang['nama'],
@@ -1599,6 +2054,7 @@ class RiwayatService extends Component
             'subtotal' => $this->itemJumlah * $this->itemHargaJual,
         ];
 
+        // Reset form
         $this->selectedBarangId = null;
         $this->itemJumlah = 1;
         $this->itemHargaJual = null;
@@ -1606,6 +2062,7 @@ class RiwayatService extends Component
         session()->flash('message', 'Barang ditambahkan ke daftar');
     }
 
+    // Remove barang from list
     public function removeBarangFromList($index)
     {
         if (isset($this->selectedBarangItems[$index])) {
@@ -1614,32 +2071,35 @@ class RiwayatService extends Component
         }
     }
 
+    // Add manual item to the list
     public function addManualToList()
     {
+        // Custom validation for manual items
         $errors = [];
-
+        
         if (empty(trim($this->nama_barang_manual))) {
             $errors['nama_barang_manual'] = 'Nama barang manual harus diisi';
         } elseif (strlen(trim($this->nama_barang_manual)) > 255) {
             $errors['nama_barang_manual'] = 'Nama barang maksimal 255 karakter';
         }
-
+        
         if (!is_numeric($this->jumlah_manual) || $this->jumlah_manual < 1) {
             $errors['jumlah_manual'] = 'Jumlah harus berupa angka dan minimal 1';
         }
-
+        
         if (empty(trim($this->satuan_manual))) {
             $errors['satuan_manual'] = 'Satuan harus dipilih';
         }
-
+        
         if (!is_numeric($this->harga_jual_manual) || $this->harga_jual_manual < 0) {
             $errors['harga_jual_manual'] = 'Harga jual harus berupa angka dan tidak boleh negatif';
         }
-
+        
         if (!is_numeric($this->harga_beli_manual) || $this->harga_beli_manual < 0) {
             $errors['harga_beli_manual'] = 'Harga beli harus berupa angka dan tidak boleh negatif';
         }
 
+        // If there are validation errors, add them and return
         if (!empty($errors)) {
             foreach ($errors as $field => $message) {
                 $this->addError($field, $message);
@@ -1648,6 +2108,7 @@ class RiwayatService extends Component
         }
 
         try {
+            // Add to list
             $this->manualItems[] = [
                 'nama_barang' => trim($this->nama_barang_manual),
                 'jumlah' => (int)$this->jumlah_manual,
@@ -1657,22 +2118,25 @@ class RiwayatService extends Component
                 'subtotal' => (int)$this->jumlah_manual * (float)$this->harga_jual_manual,
             ];
 
+            // Reset form
             $this->nama_barang_manual = '';
             $this->jumlah_manual = 1;
             $this->satuan_manual = 'pcs';
             $this->harga_jual_manual = 0;
             $this->harga_beli_manual = 0;
 
+            // Clear any previous errors
             $this->resetErrorBag(['nama_barang_manual', 'jumlah_manual', 'satuan_manual', 'harga_jual_manual', 'harga_beli_manual']);
 
             session()->flash('message', 'Barang manual ditambahkan ke daftar');
-
+            
         } catch (\Exception $e) {
             Log::error('Error adding manual item to list: ' . $e->getMessage());
             $this->addError('general', 'Gagal menambahkan barang manual: ' . $e->getMessage());
         }
     }
 
+    // Remove manual item from list
     public function removeManualFromList($index)
     {
         if (isset($this->manualItems[$index])) {
@@ -1681,26 +2145,30 @@ class RiwayatService extends Component
         }
     }
 
+
+    // Add jasa to the list
     public function addJasaToList()
     {
+        // FIXED: Use custom validation instead of relying on form validation
         $errors = [];
-
+        
         if (empty(trim($this->namaJasaBaru))) {
             $errors['namaJasaBaru'] = 'Nama jasa harus diisi';
         } elseif (strlen(trim($this->namaJasaBaru)) > 255) {
             $errors['namaJasaBaru'] = 'Nama jasa maksimal 255 karakter';
         }
-
+        
         if (!is_numeric($this->hargaJasaBaru) || $this->hargaJasaBaru < 0) {
             $errors['hargaJasaBaru'] = 'Harga jasa harus berupa angka dan tidak boleh negatif';
         } elseif ($this->hargaJasaBaru == 0) {
             $errors['hargaJasaBaru'] = 'Harga jasa harus lebih dari 0';
         }
-
+        
         if (!empty($this->keteranganJasaBaru) && strlen(trim($this->keteranganJasaBaru)) > 500) {
             $errors['keteranganJasaBaru'] = 'Keterangan maksimal 500 karakter';
         }
 
+        // If there are validation errors, add them and return
         if (!empty($errors)) {
             foreach ($errors as $field => $message) {
                 $this->addError($field, $message);
@@ -1708,6 +2176,7 @@ class RiwayatService extends Component
             return;
         }
 
+        // Check if jasa with same name already added
         foreach ($this->jasaItems as $item) {
             if (strtolower(trim($item['nama_jasa'])) === strtolower(trim($this->namaJasaBaru))) {
                 $this->addError('namaJasaBaru', 'Jasa dengan nama yang sama sudah ditambahkan');
@@ -1716,26 +2185,36 @@ class RiwayatService extends Component
         }
 
         try {
+            // Add to list
             $this->jasaItems[] = [
                 'nama_jasa' => trim($this->namaJasaBaru),
                 'harga_jasa' => (float)$this->hargaJasaBaru,
                 'keterangan' => !empty(trim($this->keteranganJasaBaru)) ? trim($this->keteranganJasaBaru) : null,
             ];
 
+            // Reset form
             $this->namaJasaBaru = '';
             $this->hargaJasaBaru = 0;
             $this->keteranganJasaBaru = '';
 
+            // Clear any previous errors
             $this->resetErrorBag(['namaJasaBaru', 'hargaJasaBaru', 'keteranganJasaBaru']);
 
-            session()->flash('message', 'Jasa berhasil ditambahkan ke daftar');
+            Log::info('Jasa added to list', [
+                'nama_jasa' => trim($this->namaJasaBaru),
+                'harga_jasa' => (float)$this->hargaJasaBaru,
+                'total_jasa_items' => count($this->jasaItems)
+            ]);
 
+            session()->flash('message', 'Jasa berhasil ditambahkan ke daftar');
+            
         } catch (\Exception $e) {
             Log::error('Error adding jasa to list: ' . $e->getMessage());
             $this->addError('general', 'Gagal menambahkan jasa: ' . $e->getMessage());
         }
     }
 
+    // Remove jasa from list
     public function removeJasaFromList($index)
     {
         if (isset($this->jasaItems[$index])) {
@@ -1744,8 +2223,10 @@ class RiwayatService extends Component
         }
     }
 
+    // Save all items to transaction
     public function saveAllItemsToTransaction()
     {
+        // Validate transaction exists
         if (!$this->selectedTransactionId) {
             $this->addError('general', 'Transaction ID is required');
             return;
@@ -1757,6 +2238,7 @@ class RiwayatService extends Component
             return;
         }
 
+        // Check if there are items to save
         if (empty($this->selectedBarangItems) && empty($this->manualItems) && empty($this->jasaItems)) {
             $this->addError('general', 'Tidak ada item yang akan disimpan');
             return;
@@ -1768,7 +2250,9 @@ class RiwayatService extends Component
             $totalItemsAdded = 0;
             $totalAmount = 0;
 
+            // Process barang items
             foreach ($this->selectedBarangItems as $item) {
+                // Double check stock availability
                 $availableStock = Pembelian::where('barang_id', $item['barang_id'])
                     ->where('jumlah_tersisa', '>', 0)
                     ->sum('jumlah_tersisa');
@@ -1777,8 +2261,10 @@ class RiwayatService extends Component
                     throw new \Exception("Stok barang {$item['nama']} tidak mencukupi. Tersedia: {$availableStock}");
                 }
 
+                // Reduce stock using FIFO
                 $usedPembelians = $this->reduceStockFifo($item['barang_id'], $item['jumlah']);
 
+                // Create service barang items
                 foreach ($usedPembelians as $used) {
                     ServiceBarangItem::create([
                         'transaksi_service_id' => $this->selectedTransactionId,
@@ -1797,6 +2283,7 @@ class RiwayatService extends Component
                 $totalAmount += $item['subtotal'];
             }
 
+            // Process manual items
             foreach ($this->manualItems as $item) {
                 ServiceBarangItem::create([
                     'transaksi_service_id' => $this->selectedTransactionId,
@@ -1815,19 +2302,29 @@ class RiwayatService extends Component
                 $totalAmount += $item['subtotal'];
             }
 
+            // FIXED: Process jasa items properly
             foreach ($this->jasaItems as $item) {
-                ServiceJasaItem::create([
+                $jasaItem = ServiceJasaItem::create([
                     'transaksi_service_id' => $this->selectedTransactionId,
                     'nama_jasa' => $item['nama_jasa'],
                     'harga_jasa' => $item['harga_jasa'],
-                    'subtotal' => $item['harga_jasa'],
-                    'keterangan' => $item['keterangan'],
+                    'subtotal' => $item['harga_jasa'], // For jasa, subtotal = harga_jasa
+                    'keterangan' => $item['keterangan']
+                ]);
+
+                Log::info('Jasa item saved to database', [
+                    'jasa_item_id' => $jasaItem->id,
+                    'transaksi_service_id' => $this->selectedTransactionId,
+                    'nama_jasa' => $item['nama_jasa'],
+                    'harga_jasa' => $item['harga_jasa'],
+                    'keterangan' => $item['keterangan']
                 ]);
 
                 $totalItemsAdded++;
                 $totalAmount += $item['harga_jasa'];
             }
 
+            // Recalculate transaction totals
             $this->recalculateTransactionTotals($transaction);
 
             DB::commit();
@@ -1838,16 +2335,16 @@ class RiwayatService extends Component
                 'total_amount' => $totalAmount,
                 'barang_items' => count($this->selectedBarangItems),
                 'manual_items' => count($this->manualItems),
-                'jasa_items' => count($this->jasaItems),
+                'jasa_items' => count($this->jasaItems)
             ]);
 
             $this->closeModal();
-            $this->loadAvailableBarangs();
-
+            $this->loadAvailableBarangs(); //
+            
             $this->dispatch('items-added', [
                 'invoice' => $transaction->invoice,
                 'total_items' => $totalItemsAdded,
-                'total_amount' => $totalAmount,
+                'total_amount' => $totalAmount
             ]);
 
             session()->flash('message', "Berhasil menambahkan {$totalItemsAdded} item dengan total Rp" . number_format($totalAmount, 0, ',', '.'));
@@ -1859,7 +2356,7 @@ class RiwayatService extends Component
                 'barang_items' => count($this->selectedBarangItems),
                 'manual_items' => count($this->manualItems),
                 'jasa_items' => count($this->jasaItems),
-                'trace' => $e->getTraceAsString(),
+                'trace' => $e->getTraceAsString()
             ]);
             $this->addError('general', 'Gagal menambah item: ' . $e->getMessage());
         }

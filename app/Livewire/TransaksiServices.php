@@ -144,7 +144,6 @@ class TransaksiServices extends Component
             }])->get()->map(function($barang) {
                 $totalStok = $barang->pembelians->sum('jumlah_tersisa');
                 $supplierCount = $barang->pembelians->groupBy('supplier')->count();
-                $avgHPP = $barang->pembelians->avg('harga_beli');
                 
                 return [
                     'id' => $barang->id,

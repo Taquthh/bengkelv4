@@ -19,6 +19,7 @@ use App\Livewire\RiwayatService;
 use App\Livewire\RiwayatTransaksi;
 use App\Livewire\RiwayatTransaksiBarang;
 use App\Livewire\TransaksiBarang;
+use App\Livewire\Dashboard  ;
 
 Route::get('/', fn () => view('welcome'));
 
@@ -31,9 +32,9 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', Dashboard::class)
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
     Route::middleware(['auth', 'role:kasir,owner'])->group(function () {
         Route::get('/barang/stok', PembelianIndex::class); // Ini hanya untuk Livewire v3

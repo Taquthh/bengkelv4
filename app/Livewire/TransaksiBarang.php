@@ -113,10 +113,7 @@ class TransaksiBarang extends Component
                 ];
                 
                 // Auto-suggest price with 20% markup from average cost
-                $avgHargaBeli = $barang->pembelians->avg('harga_beli');
-                if ($avgHargaBeli && !$this->harga_jual) {
-                    $this->harga_jual = round($avgHargaBeli * 1.2);
-                }
+            
             }
         } else {
             $this->selectedBarangInfo = null;
