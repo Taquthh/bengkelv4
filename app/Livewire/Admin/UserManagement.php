@@ -18,10 +18,41 @@ class UserManagement extends Component
     public $selectedUserId;
     public $selectedRole;
     public $selectedUserName;
+    public $showDeleteModal = false;
+    public $deleteUserId;
+    public $deleteUserName;
     public function mount()
     {
         $this->now = now();
     }
+
+    public function confirmDeleteUser($userId, $userName)
+    {
+        $this->deleteUserId = $userId;
+        $this->deleteUserName = $userName;
+        $this->showDeleteModal = true;
+    }
+
+    public function cancelDelete()
+    {
+        $this->reset(['showDeleteModal', 'deleteUserId', 'deleteUserName']);
+    }
+
+public function deleteUser()
+{
+    $user = User::findOrFail($this->deleteUserId);
+
+    if ($user->id === Auth::id()) {
+        session()->flash('error', 'Anda tidak bisa menghapus akun Anda sendiri.');
+        $this->cancelDelete();
+        return;
+    }
+
+    $user->delete();
+    session()->flash('message', "Akun {$user->name} berhasil dihapus.");
+    
+    $this->cancelDelete();
+}
 
     public function generateToken()
     {

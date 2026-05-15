@@ -62,13 +62,23 @@
                                         </span>
                                     </td>
                                     <td class="px-4 py-4 text-center rounded-r-2xl">
-                                        <select wire:change="confirmUpdateRole({{ $u->id }}, $event.target.value, '{{ $u->name }}')" 
-                                            class="text-xs font-semibold bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-indigo-500 transition-all cursor-pointer"
-                                            {{ $u->id === auth()->id() ? 'disabled' : '' }}>
-                                            <option value="kasir" {{ $u->role == 'kasir' ? 'selected' : '' }}>KASIR</option>
-                                            <option value="keuangan" {{ $u->role == 'keuangan' ? 'selected' : '' }}>KEUANGAN</option>
-                                            <option value="owner" {{ $u->role == 'owner' ? 'selected' : '' }}>OWNER</option>
-                                        </select>
+                                        <div class="flex items-center justify-center gap-2">
+                                            <select wire:change="confirmUpdateRole({{ $u->id }}, $event.target.value, '{{ $u->name }}')" 
+                                                class="text-xs font-semibold bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-indigo-500 transition-all cursor-pointer"
+                                                {{ $u->id === auth()->id() ? 'disabled' : '' }}>
+                                                <option value="kasir" {{ $u->role == 'kasir' ? 'selected' : '' }}>KASIR</option>
+                                                <option value="keuangan" {{ $u->role == 'keuangan' ? 'selected' : '' }}>KEUANGAN</option>
+                                                <option value="owner" {{ $u->role == 'owner' ? 'selected' : '' }}>OWNER</option>
+                                            </select>
+
+                                            {{-- Tombol Hapus --}}
+                                            @if($u->id !== auth()->id())
+                                                <button wire:click="confirmDeleteUser({{ $u->id }}, '{{ $u->name }}')" 
+                                                    class="h-9 px-4 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-tight rounded-xl shadow-md shadow-red-200 dark:shadow-none transition-all active:scale-95 flex items-center justify-center border border-transparent">
+                                                    Hapus Akun
+                                                </button>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -195,6 +205,44 @@
                         <button wire:click="updateRole" type="button" 
                             class="flex-1 px-4 py-3 bg-indigo-600 text-white text-sm font-bold rounded-2xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 dark:shadow-none transition-all">
                             Ya, Perbarui
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
+
+<!-- Modal Konfirmasi Hapus User -->
+@if($showDeleteModal)
+    <div class="fixed inset-0 z-[100] overflow-y-auto" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900/75 backdrop-blur-sm transition-opacity"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-100 dark:border-gray-700">
+                <div class="p-8">
+                    <div class="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 dark:bg-red-900/30 rounded-full mb-6 text-red-600 dark:text-red-400">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    
+                    <div class="text-center">
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Hapus Pengguna?</h3>
+                        <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                            Tindakan ini akan menghapus akun <span class="font-bold text-red-600">{{ $deleteUserName }}</span> secara permanen. Data yang terkait mungkin akan hilang.
+                        </p>
+                    </div>
+
+                    <div class="mt-8 flex gap-3">
+                        <button wire:click="cancelDelete" type="button" 
+                            class="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-all">
+                            Batal
+                        </button>
+                        <button wire:click="deleteUser" type="button" 
+                            class="flex-1 px-4 py-3 bg-red-600 text-white text-sm font-bold rounded-2xl hover:bg-red-700 shadow-lg shadow-red-200 dark:shadow-none transition-all">
+                            Ya, Hapus Akun
                         </button>
                     </div>
                 </div>
