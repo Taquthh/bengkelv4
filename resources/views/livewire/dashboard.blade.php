@@ -93,6 +93,217 @@
                 </div>
             </div>
 
+            @if(Auth::user()->role === 'owner')
+                <div class="space-y-4">
+
+                    {{-- ── KPI Metrics Row ── --}}
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {{-- Pendapatan bulan ini --}}
+                        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-7 h-7 rounded-lg bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-green-700 dark:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Pendapatan bulan ini</span>
+                            </div>
+                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+                                Rp{{ number_format($ownerStats['pendapatan_bulan_ini'], 0, ',', '.') }}
+                            </p>
+                            @if($ownerStats['pct_pendapatan'] >= 0)
+                            <p class="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                                +{{ $ownerStats['pct_pendapatan'] }}% vs bulan lalu
+                            </p>
+                            @else
+                            <p class="text-xs text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
+                                {{ $ownerStats['pct_pendapatan'] }}% vs bulan lalu
+                            </p>
+                            @endif
+                        </div>
+
+                        {{-- Rata-rata per order --}}
+                        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-blue-700 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                    </svg>
+                                </div>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Rata-rata per order</span>
+                            </div>
+                            <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+                                Rp{{ number_format($ownerStats['avg_per_order'], 0, ',', '.') }}
+                            </p>
+                            <p class="text-xs text-gray-400 mt-1">dari {{ $ownerStats['total_transaksi_bulan'] }} transaksi bulan ini</p>
+                        </div>
+
+                        {{-- Total piutang --}}
+                        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-7 h-7 rounded-lg bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-orange-700 dark:text-orange-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Total piutang</span>
+                            </div>
+                            <p class="text-2xl font-semibold text-orange-600 dark:text-orange-400">
+                                Rp{{ number_format($ownerStats['total_piutang'], 0, ',', '.') }}
+                            </p>
+                            <p class="text-xs text-red-500 dark:text-red-400 mt-1">{{ $ownerStats['count_belum_lunas'] }} transaksi belum lunas</p>
+                        </div>
+
+                        {{-- Pengeluaran operasional --}}
+                        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-7 h-7 rounded-lg bg-red-100 dark:bg-red-900 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-red-700 dark:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"/>
+                                    </svg>
+                                </div>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Pengeluaran bulan ini</span>
+                            </div>
+                            <p class="text-2xl font-semibold text-red-600 dark:text-red-400">
+                                Rp{{ number_format($ownerStats['pengeluaran_bulan_ini'], 0, ',', '.') }}
+                            </p>
+                            <p class="text-xs text-gray-400 mt-1">
+                                Laba bersih:
+                                <span class="font-medium {{ ($ownerStats['pendapatan_bulan_ini'] - $ownerStats['pengeluaran_bulan_ini']) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600' }}">
+                                    Rp{{ number_format($ownerStats['pendapatan_bulan_ini'] - $ownerStats['pengeluaran_bulan_ini'], 0, ',', '.') }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+
+                    {{-- ── Charts Row ── --}}
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+                        {{-- Grafik pendapatan 7 hari --}}
+                        <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+                            <div class="flex items-center justify-between mb-1">
+                                <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Pendapatan 7 hari terakhir</h3>
+                                <div class="flex items-center gap-3 text-xs text-gray-500">
+                                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-blue-600 inline-block"></span>Servis</span>
+                                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-green-600 inline-block"></span>Barang</span>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 mb-4">Nilai dalam rupiah</p>
+                            <div class="relative h-48">
+                                <canvas id="chartPendapatan7Hari"
+                                    role="img"
+                                    aria-label="Grafik batang pendapatan servis dan barang selama 7 hari terakhir">
+                                    Data grafik pendapatan 7 hari terakhir.
+                                </canvas>
+                            </div>
+                        </div>
+
+                        {{-- Donut status pekerjaan --}}
+                        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+                            <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Status pekerjaan</h3>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 mb-4">Bulan ini · {{ $ownerStats['total_transaksi_bulan'] }} total</p>
+                            <div class="relative h-36 mb-3">
+                                <canvas id="chartStatusPekerjaan"
+                                    role="img"
+                                    aria-label="Donut chart status pekerjaan bulan ini: selesai, proses, belum dikerjakan">
+                                    Status pekerjaan: selesai {{ $ownerStats['status_selesai'] }}, proses {{ $ownerStats['status_proses'] }}, belum {{ $ownerStats['status_belum'] }}.
+                                </canvas>
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400"><span class="w-2 h-2 rounded-full bg-green-600 inline-block"></span>Selesai</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ $ownerStats['status_selesai'] }}</span>
+                                </div>
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400"><span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>Sedang proses</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ $ownerStats['status_proses'] }}</span>
+                                </div>
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400"><span class="w-2 h-2 rounded-full bg-orange-400 inline-block"></span>Belum dikerjakan</span>
+                                    <span class="font-medium text-gray-900 dark:text-white">{{ $ownerStats['status_belum'] }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ── Bottom Row: Top Jasa + Alerts ── --}}
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+                        {{-- Top jasa terlaris --}}
+                        <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+                            <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Jasa & barang terlaris</h3>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 mb-4">Berdasarkan frekuensi transaksi bulan ini</p>
+                            <div class="space-y-3">
+                                @forelse($ownerStats['top_jasa'] as $i => $item)
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xs text-gray-400 w-4 text-center">{{ $i + 1 }}</span>
+                                    <span class="text-xs text-gray-600 dark:text-gray-400 w-32 truncate">{{ $item['nama'] }}</span>
+                                    <div class="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                                        <div class="h-full bg-blue-600 rounded-full"
+                                            style="width: {{ $item['pct'] }}%"></div>
+                                    </div>
+                                    <span class="text-xs font-medium text-gray-900 dark:text-white w-16 text-right">{{ $item['count'] }}x</span>
+                                    <span class="text-xs text-gray-400 w-24 text-right hidden sm:block">Rp{{ number_format($item['total'], 0, ',', '.') }}</span>
+                                </div>
+                                @empty
+                                <p class="text-xs text-gray-400 text-center py-4">Belum ada data</p>
+                                @endforelse
+                            </div>
+                        </div>
+
+                        {{-- Alert panel --}}
+                        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3">
+                            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Perhatian</h3>
+
+                            {{-- Stok hampir habis --}}
+                            @if($ownerStats['stok_menipis'] > 0)
+                            <div class="flex gap-2.5 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
+                                <svg class="w-4 h-4 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                </svg>
+                                <div>
+                                    <p class="text-xs font-semibold text-amber-800 dark:text-amber-300">Stok hampir habis</p>
+                                    <p class="text-xs text-amber-700 dark:text-amber-400 mt-0.5">{{ $ownerStats['stok_menipis'] }} barang di bawah minimum. Perlu restock.</p>
+                                    <a href="/barang/stok" class="text-xs text-amber-800 dark:text-amber-300 underline mt-1 inline-block">Lihat inventory →</a>
+                                </div>
+                            </div>
+                            @endif
+
+                            {{-- Piutang lebih dari 7 hari --}}
+                            @if($ownerStats['piutang_lama'] > 0)
+                            <div class="flex gap-2.5 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+                                <svg class="w-4 h-4 text-red-700 dark:text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <div>
+                                    <p class="text-xs font-semibold text-red-800 dark:text-red-300">Piutang &gt;7 hari</p>
+                                    <p class="text-xs text-red-700 dark:text-red-400 mt-0.5">{{ $ownerStats['piutang_lama'] }} transaksi belum dibayar lebih dari 7 hari.</p>
+                                    <a href="{{ route('riwayat.service') }}" class="text-xs text-red-800 dark:text-red-300 underline mt-1 inline-block">Lihat riwayat →</a>
+                                </div>
+                            </div>
+                            @endif
+
+                            {{-- Tren pendapatan --}}
+                            <div class="flex gap-2.5 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+                                <svg class="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                                </svg>
+                                <div>
+                                    <p class="text-xs font-semibold text-blue-800 dark:text-blue-300">Tren pendapatan</p>
+                                    <p class="text-xs text-blue-700 dark:text-blue-400 mt-0.5">
+                                        {{ $ownerStats['pct_pendapatan'] >= 0 ? 'Naik' : 'Turun' }} {{ abs($ownerStats['pct_pendapatan']) }}% dibanding bulan lalu.
+                                    </p>
+                                    <a href="{{ route('laporan.bulanan') }}" class="text-xs text-blue-800 dark:text-blue-300 underline mt-1 inline-block">Lihat laporan →</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                @endif
+
             {{-- ── Menu Cards (Kasir & Owner) ── --}}
             @if(in_array(Auth::user()->role, ['kasir', 'owner']))
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
