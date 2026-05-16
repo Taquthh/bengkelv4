@@ -46,6 +46,7 @@ class TransaksiServices extends Component
     public $barang_id = '';
     public $itemsBarang = [];
     public $jumlah = 1;
+    public $tanggal_service;
     public $harga_jual = 0;
 
     public $nama_barang_manual = '';
@@ -87,6 +88,7 @@ class TransaksiServices extends Component
     protected $rules = [
         'nama_pelanggan' => 'required|string|max:255',
         'kontak' => 'nullable|string|max:20',
+        'tanggal_transaksi' => 'required|date',
         'merk_mobil' => 'required|string|max:100',
         'tipe_mobil' => 'required|string|max:100',
         'nopol' => 'required|string|max:15',
@@ -130,6 +132,7 @@ class TransaksiServices extends Component
     {
         $this->kasir = Auth::user()->name ?? 'Admin';
         $this->loadBarangs();
+        $this->tanggal_service = now()->timezone('Asia/Makassar')->format('Y-m-d\TH:i');
         $this->jatuh_tempo = now()->addDays(30)->format('Y-m-d');
         $this->jumlah_dibayar_sekarang = 0;
         $this->status_pekerjaan = 'belum_dikerjakan';
@@ -713,19 +716,28 @@ class TransaksiServices extends Component
                 ]
             );
 
+            // Contoh penggunaan di dalam simpanTransaksi():
+            $tanggal = Carbon::parse($this->tanggal_service)->timezone('Asia/Makassar');
+
+            // 2. Ambil waktu (jam, menit, detik) saat tombol "Simpan" ditekan sekarang juga
+            $waktuSekarang = now()->timezone('Asia/Makassar');
+
+            // 3. Timpa waktu dari input user dengan waktu real-time saat ini (termasuk detiknya)
+            $tanggal->setTimeFrom($waktuSekarang);
+
             Log::info('PelangganMobil created/updated', ['id' => $pelangganMobil->id]);
 
             // 2. Create TransaksiService
             $transaksiData = [
-                'invoice' => $this->generateInvoice(),
+                'invoice' => $this->generateInvoice($tanggal),
                 'pelanggan_mobil_id' => $pelangganMobil->id,
                 'kasir' => $this->kasir,
-                'tanggal_service' => now()->toDateString(),
+                'tanggal_service' => $tanggal,
                 'keluhan' => $this->keluhan,
                 'diagnosa' => $this->diagnosa ?: null,
                 'pekerjaan_dilakukan' => $this->pekerjaan_dilakukan ?: null,
                 'metode_pembayaran' => $this->metode_pembayaran,
-                'strategi_pembayaran' => 'cicilan', // Set tetap ke cicilan
+                'strategi_pembayaran' => $this->strategi_pembayaran,
                 'status_pekerjaan' => $this->status_pekerjaan, // Set default
                 'status_pembayaran' => $this->getStatusPembayaranProperty(),
                 'total_barang' => $this->getTotalBarangProperty(),
@@ -981,6 +993,10 @@ class TransaksiServices extends Component
             'satuan_manual' => 'required|string|max:20',
             'harga_jual_manual' => 'required|numeric|min:0',
             'harga_beli_manual' => 'required|numeric|min:0',
+            'kontak'          => 'nullable|string|max:20',
+            'nama_perusahaan' => 'nullable|string|max:255',
+            'tahun'           => 'nullable|numeric',
+            'warna'           => 'nullable|string|max:50',
         ]);
 
         try {
@@ -1079,11 +1095,13 @@ class TransaksiServices extends Component
         return $statusText;
     }
 
-    private function generateInvoice(): string
+    private function generateInvoice(Carbon $tanggal): string
     {
         $prefix = 'FJS';
-        $month = strtoupper(now()->format('M'));
-        $year = now()->format('Y');
+        // Menggunakan variabel $tanggalService yang di-passing dari form, bukan now() lagi
+        // KODE BARU (Otomatis mendeteksi bahasa Indonesia untuk nama bulan):
+        $month = strtoupper($tanggal->translatedFormat('M'));
+        $year = $tanggal->format('Y');
         $dateSegment = "{$prefix}/{$month}/{$year}";
 
         $maxRetries = 5;

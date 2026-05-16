@@ -28,7 +28,22 @@
                                 <h1 class="text-3xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent">
                                     Transaksi Barang
                                 </h1>
-                                <p class="text-gray-500 font-medium text-base">{{ now()->format('l, d F Y • H:i') }}</p>
+                                <div class="relative flex items-center group">
+                                    <div class="absolute left-3 text-gray-400 pointer-events-none">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 3V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+
+                                    <input wire:model="tanggal_pembelian" 
+                                        type="date"
+                                        class="w-full text-gray-700 font-semibold text-sm bg-white border border-gray-200 rounded-xl pl-10 pr-16 py-2.5 shadow-sm transition-all focus:ring-4 focus:ring-blue-100 focus:border-blue-500 focus:outline-none cursor-pointer"
+                                        style="color-scheme: light;">
+
+                                    <div class="absolute right-3 bg-gray-100 text-gray-500 font-bold text-[10px] px-2 py-1 rounded-md uppercase pointer-events-none select-none border border-gray-200">
+                                        WITA
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -141,16 +156,17 @@
                                 <!-- Satuan -->
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Satuan</label>
-                                    <select wire:model="satuan_manual" 
-                                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200">
-                                        <option value="pcs">pcs</option>
-                                        <option value="set">set</option>
-                                        <option value="unit">unit</option>
-                                        <option value="meter">meter</option>
-                                        <option value="liter">liter</option>
-                                        <option value="kg">kg</option>
-                                        <option value="dus">dus</option>
-                                        <option value="box">box</option>
+                                    <select 
+                                        wire:model="satuan_manual" 
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('satuan') border-red-500 @enderror"
+                                    >
+                                        <option value="">-- Pilih Satuan --</option>
+                                        <option value="ltr">Liter (Ltr)</option>
+                                        <option value="gln">Galon (Gln)</option>
+                                        <option value="pcs">Pieces (Pcs)</option>
+                                        <option value="klng">Kaleng (Klng)</option>
+                                        <option value="btl">Botol (Btl)</option>
+                                        <option value="set">Set (Set)</option>
                                     </select>
                                 </div>
                             </div>

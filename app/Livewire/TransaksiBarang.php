@@ -8,6 +8,7 @@ use App\Models\PenjualanItem;
 use App\Models\Barang;
 use App\Models\Pembelian;
 use App\Models\Transaksi;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -34,9 +35,11 @@ class TransaksiBarang extends Component
     public $keterangan_manual = '';
     
     public $items = [];
+    public $tanggal_pembelian;
 
     protected $rules = [
         'kasir' => 'required|string|max:100',
+        'tanggal_pembelian' => 'required|date',
         'barang_id' => 'required|exists:barangs,id',
         'jumlah' => 'required|integer|min:1',
         'harga_jual' => 'required|numeric|min:0',
@@ -51,6 +54,7 @@ class TransaksiBarang extends Component
 
     protected $messages = [
         'kasir.required' => 'Nama kasir wajib diisi.',
+        'tanggal_pembelian.required' => 'Tanggal transaksi wajib diisi.',
         'barang_id.required' => 'Pilih barang terlebih dahulu.',
         'barang_id.exists' => 'Barang tidak ditemukan.',
         'jumlah.required' => 'Jumlah wajib diisi.',
@@ -73,6 +77,7 @@ class TransaksiBarang extends Component
     public function mount()
     {
         $this->kasir = Auth::user()->name ?? 'Admin';
+        $this->tanggal_pembelian = now()->timezone('Asia/Makassar')->format('Y-m-d');
     }
 
     public function render()
@@ -111,9 +116,6 @@ class TransaksiBarang extends Component
                         ];
                     })->values()->toArray()
                 ];
-                
-                // Auto-suggest price with 20% markup from average cost
-            
             }
         } else {
             $this->selectedBarangInfo = null;
@@ -146,7 +148,6 @@ class TransaksiBarang extends Component
 
         $barang = Barang::find($this->barang_id);
         
-        // Check available stock from all suppliers
         $totalStokTersedia = Pembelian::where('barang_id', $this->barang_id)
             ->where('jumlah_tersisa', '>', 0)
             ->sum('jumlah_tersisa');
@@ -156,14 +157,12 @@ class TransaksiBarang extends Component
             return;
         }
 
-        // Check if item already exists in cart
         $existingIndex = collect($this->items)->search(function($item) {
             return isset($item['barang_id']) && $item['barang_id'] == $this->barang_id && 
                    (!isset($item['is_manual']) || !$item['is_manual']);
         });
 
         if ($existingIndex !== false) {
-            // Update quantity if item already exists
             $totalJumlah = $this->items[$existingIndex]['jumlah'] + $this->jumlah;
             
             if ($totalStokTersedia < $totalJumlah) {
@@ -175,7 +174,6 @@ class TransaksiBarang extends Component
             $this->items[$existingIndex]['harga_jual'] = $this->harga_jual;
             $this->items[$existingIndex]['subtotal'] = $totalJumlah * $this->harga_jual;
         } else {
-            // Add new item
             $this->items[] = [
                 'barang_id' => $barang->id,
                 'nama' => $barang->nama,
@@ -184,7 +182,7 @@ class TransaksiBarang extends Component
                 'subtotal' => $this->jumlah * $this->harga_jual,
                 'stok_tersedia' => $totalStokTersedia,
                 'supplier_info' => $this->selectedBarangInfo['suppliers'] ?? [],
-                'tanggal' => now()->toDateString(),
+                'tanggal' => $this->tanggal_pembelian,
                 'is_manual' => false,
             ];
         }
@@ -211,7 +209,6 @@ class TransaksiBarang extends Component
         ]);
 
         try {
-            // SIMPAN data ke variable lokal SEBELUM reset
             $namaBarang = $this->nama_barang_manual;
             $jumlahBarang = $this->jumlah_manual;
             $satuanBarang = $this->satuan_manual;
@@ -219,17 +216,14 @@ class TransaksiBarang extends Component
             $hargaBeli = $this->harga_beli_manual;
             $keterangan = $this->keterangan_manual ?? '';
             
-            // Generate unique temporary ID for manual items
             $tempId = 'manual_' . uniqid() . '_' . time();
             
-            // Check if manual item with same name already exists
             $existingIndex = collect($this->items)->search(function($item) use ($namaBarang) {
                 return isset($item['is_manual']) && $item['is_manual'] && 
                     strtolower($item['nama']) === strtolower($namaBarang);
             });
 
             if ($existingIndex !== false) {
-                // Update existing manual item
                 $this->items[$existingIndex]['jumlah'] += $jumlahBarang;
                 $this->items[$existingIndex]['harga_jual'] = $hargaJual;
                 $this->items[$existingIndex]['harga_beli_manual'] = $hargaBeli;
@@ -238,9 +232,8 @@ class TransaksiBarang extends Component
                 
                 $message = 'Barang manual berhasil diperbarui!';
             } else {
-                // Add new manual item
                 $this->items[] = [
-                    'barang_id' => $tempId, // Temporary ID
+                    'barang_id' => $tempId,
                     'nama' => $namaBarang,
                     'jumlah' => $jumlahBarang,
                     'satuan' => $satuanBarang,
@@ -250,26 +243,21 @@ class TransaksiBarang extends Component
                     'keterangan' => $keterangan,
                     'is_manual' => true,
                     'stok_tersedia' => 'MANUAL',
-                    'tanggal' => now()->toDateString(),
+                    'tanggal' => $this->tanggal_pembelian,
                 ];
                 
                 $message = 'Barang manual berhasil ditambahkan!';
             }
 
-            // Log SEBELUM reset (menggunakan variable lokal)
             Log::info('Manual item added successfully', [
                 'nama' => $namaBarang,
                 'jumlah' => $jumlahBarang,
                 'total_items' => count($this->items)
             ]);
 
-            // Reset form SETELAH data tersimpan
             $this->resetManualInputs();
-            
-            // Set flash message
             session()->flash('success', $message);
             
-            // Emit success events
             $this->dispatch('manual-item-added');
             $this->dispatch('hide-manual-form');
             
@@ -283,23 +271,11 @@ class TransaksiBarang extends Component
 
     public function resetManualInputs()
     {
-        Log::info('resetManualInputs called - Before reset', [
-            'nama' => $this->nama_barang_manual,
-            'jumlah' => $this->jumlah_manual,
-            'satuan' => $this->satuan_manual
-        ]);
-        
-        // Method 1: Reset menggunakan reset() method
         $this->reset([
-            'nama_barang_manual',
-            'jumlah_manual', 
-            'satuan_manual',
-            'harga_jual_manual',
-            'harga_beli_manual',
-            'keterangan_manual'
+            'nama_barang_manual', 'jumlah_manual', 'satuan_manual',
+            'harga_jual_manual', 'harga_beli_manual', 'keterangan_manual'
         ]);
         
-        // Set default values setelah reset
         $this->jumlah_manual = 1;
         $this->satuan_manual = 'pcs';
         $this->harga_jual_manual = 0;
@@ -307,30 +283,16 @@ class TransaksiBarang extends Component
         $this->nama_barang_manual = '';
         $this->keterangan_manual = '';
         
-        // Clear validation errors
         $this->resetValidation([
-            'nama_barang_manual', 
-            'jumlah_manual', 
-            'satuan_manual', 
-            'harga_jual_manual', 
-            'harga_beli_manual', 
-            'keterangan_manual'
+            'nama_barang_manual', 'jumlah_manual', 'satuan_manual', 
+            'harga_jual_manual', 'harga_beli_manual', 'keterangan_manual'
         ]);
         
-        Log::info('resetManualInputs completed - After reset', [
-            'nama' => $this->nama_barang_manual,
-            'jumlah' => $this->jumlah_manual,
-            'satuan' => $this->satuan_manual
-        ]);
-        
-        // Emit event untuk JavaScript
         $this->dispatch('manual-form-reset');
     }
 
-    // Method alternatif untuk force reset
     public function forceResetManualInputs()
     {
-        // Hard reset semua property
         $this->nama_barang_manual = '';
         $this->jumlah_manual = 1;
         $this->satuan_manual = 'pcs';
@@ -338,13 +300,8 @@ class TransaksiBarang extends Component
         $this->harga_beli_manual = 0;
         $this->keterangan_manual = '';
         
-        // Clear all errors
         $this->resetErrorBag();
-        
-        // Force re-render
         $this->dispatch('manual-form-reset');
-        
-        Log::info('Force reset manual inputs completed');
     }
 
     public function resetFormInputs()
@@ -374,6 +331,7 @@ class TransaksiBarang extends Component
     {
         $this->validate([
             'kasir' => 'required|string|max:100',
+            'tanggal_pembelian' => 'required|date', 
         ]);
 
         if (count($this->items) === 0) {
@@ -381,87 +339,53 @@ class TransaksiBarang extends Component
             return;
         }
 
-        // Validate items data integrity
         foreach ($this->items as $index => $item) {
-            if (!is_array($item)) {
-                $this->addError('general', "Item ke-{$index} tidak valid");
-                return;
-            }
+            if (!is_array($item)) { $this->addError('general', "Item ke-{$index} tidak valid"); return; }
+            if (!isset($item['nama']) || empty($item['nama'])) { $this->addError('general', "Nama barang ke-{$index} tidak boleh kosong"); return; }
+            if (!isset($item['jumlah']) || $item['jumlah'] <= 0) { $this->addError('general', "Jumlah barang '{$item['nama']}' harus lebih dari 0"); return; }
+            if (!isset($item['harga_jual']) || $item['harga_jual'] < 0) { $this->addError('general', "Harga jual barang '{$item['nama']}' tidak valid"); return; }
 
-            if (!isset($item['nama']) || empty($item['nama'])) {
-                $this->addError('general', "Nama barang ke-{$index} tidak boleh kosong");
-                return;
-            }
-
-            if (!isset($item['jumlah']) || $item['jumlah'] <= 0) {
-                $this->addError('general', "Jumlah barang '{$item['nama']}' harus lebih dari 0");
-                return;
-            }
-
-            if (!isset($item['harga_jual']) || $item['harga_jual'] < 0) {
-                $this->addError('general', "Harga jual barang '{$item['nama']}' tidak valid");
-                return;
-            }
-
-            // Validate manual items
             if (isset($item['is_manual']) && $item['is_manual']) {
-                if (!isset($item['satuan']) || empty($item['satuan'])) {
-                    $item['satuan'] = 'pcs'; // Set default
-                }
-                if (!isset($item['harga_beli_manual']) || $item['harga_beli_manual'] < 0) {
-                    $this->addError('general', "Harga beli barang manual '{$item['nama']}' tidak valid");
-                    return;
-                }
+                if (!isset($item['satuan']) || empty($item['satuan'])) { $item['satuan'] = 'pcs'; }
+                if (!isset($item['harga_beli_manual']) || $item['harga_beli_manual'] < 0) { $this->addError('general', "Harga beli barang manual '{$item['nama']}' tidak valid"); return; }
             } else {
-                // Validate regular items
-                if (!isset($item['barang_id']) || empty($item['barang_id'])) {
-                    $this->addError('general', "ID barang untuk '{$item['nama']}' tidak valid");
-                    return;
-                }
-
-                // Check stock availability
-                $availableStock = Pembelian::where('barang_id', $item['barang_id'])
-                    ->where('jumlah_tersisa', '>', 0)
-                    ->sum('jumlah_tersisa');
-
-                if ($item['jumlah'] > $availableStock) {
-                    $this->addError('general', "Stok {$item['nama']} tidak mencukupi. Tersedia: {$availableStock}");
-                    return;
-                }
+                if (!isset($item['barang_id']) || empty($item['barang_id'])) { $this->addError('general', "ID barang untuk '{$item['nama']}' tidak valid"); return; }
+                $availableStock = Pembelian::where('barang_id', $item['barang_id'])->where('jumlah_tersisa', '>', 0)->sum('jumlah_tersisa');
+                if ($item['jumlah'] > $availableStock) { $this->addError('general', "Stok {$item['nama']} tidak mencukupi. Tersedia: {$availableStock}"); return; }
             }
         }
+
+        $tanggalFinal = Carbon::parse($this->tanggal_pembelian)->timezone('Asia/Makassar');
+        $waktuSekarang = now()->timezone('Asia/Makassar');
+        $tanggalFinal->setTimeFrom($waktuSekarang);
 
         DB::beginTransaction();
         try {
             $totalHarga = $this->getTotalHarga();
             
-            // Create main transaction record
-            $penjualan = Transaksi::create([
+            // PENGATURAN BARU: Masukkan field 'tanggal' untuk memenuhi batasan database
+            $penjualan = new Transaksi([
                 'kasir' => $this->kasir,
                 'keterangan' => $this->keterangan,
-                'tanggal' => now()->toDateString(),
+                'tanggal' => $tanggalFinal->toDateString(),
                 'total_harga' => $totalHarga,
             ]);
 
-            Log::info('Penjualan created', ['id' => $penjualan->id, 'total' => $totalHarga]);
+            $penjualan->created_at = $tanggalFinal;
+            $penjualan->updated_at = $tanggalFinal;
+            $penjualan->save();
 
-            // Process each item
+            Log::info('Penjualan created via created_at override', ['id' => $penjualan->id, 'total' => $totalHarga]);
+
             foreach ($this->items as $index => $item) {
                 try {
                     if (isset($item['is_manual']) && $item['is_manual']) {
-                        // Process manual item
                         $this->prosesItemManual($penjualan->id, $item);
                     } else {
-                        // Process regular item
                         $this->prosesItemPenjualan($penjualan->id, $item);
                     }
                 } catch (\Exception $e) {
                     $itemName = $item['nama'] ?? "Item ke-{$index}";
-                    Log::error('Error processing item', [
-                        'item_name' => $itemName,
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
-                    ]);
                     throw new \Exception("Gagal memproses item: {$itemName} - {$e->getMessage()}");
                 }
             }
@@ -471,17 +395,10 @@ class TransaksiBarang extends Component
             $this->showSuccessMessage($totalHarga);
             $this->resetAfterSale();
             
-            Log::info('Penjualan saved successfully', [
-                'total' => $totalHarga,
-                'items_count' => count($this->items)
-            ]);
-            
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->addError('general', 'Terjadi kesalahan: ' . $e->getMessage());
-            Log::error('Error in simpanPenjualan: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
+            $this->addError('general', 'Terjadi kesalahan saat menyimpan: ' . $e->getMessage());
+            Log::error('Error in simpanPenjualan: ' . $e->getMessage());
         }
     }
 
@@ -493,11 +410,10 @@ class TransaksiBarang extends Component
                 'item' => $item
             ]);
 
-            // Prepare data untuk insert
             $data = [
-                'penjualan_id' => $transaksiId, // Pastikan ini sesuai dengan kolom di tabel
-                'barang_id' => null, // Explicitly set to null
-                'pembelian_id' => null, // Explicitly set to null
+                'penjualan_id' => $transaksiId,
+                'barang_id' => null,
+                'pembelian_id' => null,
                 'nama_barang_manual' => $item['nama'],
                 'jumlah' => $item['jumlah'],
                 'satuan' => $item['satuan'] ?? 'pcs',
@@ -508,8 +424,6 @@ class TransaksiBarang extends Component
             ];
 
             Log::info('Creating PenjualanItem with data', $data);
-
-            // Create manual item record
             $penjualanItem = PenjualanItem::create($data);
 
             Log::info('Manual item created successfully', [
@@ -522,7 +436,6 @@ class TransaksiBarang extends Component
         } catch (\Exception $e) {
             Log::error('Error in prosesItemManual', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
                 'item' => $item
             ]);
             throw $e;
@@ -535,7 +448,6 @@ class TransaksiBarang extends Component
         $harga = $item['harga_jual'];
         $barang_id = $item['barang_id'];
 
-        // FIFO: Take from oldest stock first
         $pembelians = Pembelian::where('barang_id', $barang_id)
             ->where('jumlah_tersisa', '>', 0)
             ->orderBy('tanggal', 'asc')
@@ -548,7 +460,6 @@ class TransaksiBarang extends Component
 
             $jumlahDiambil = min($jumlahDibutuhkan, $pembelian->jumlah_tersisa);
 
-            // Create sale item record
             PenjualanItem::create([
                 'penjualan_id' => $transaksiId,
                 'pembelian_id' => $pembelian->id,
@@ -559,7 +470,6 @@ class TransaksiBarang extends Component
                 'is_manual' => false,
             ]);
 
-            // Reduce available stock
             $pembelian->jumlah_tersisa -= $jumlahDiambil;
             $pembelian->save();
 
@@ -588,6 +498,8 @@ class TransaksiBarang extends Component
         $this->kasir = Auth::user()->name ?? 'Admin';
         $this->jumlah_manual = 1;
         $this->satuan_manual = 'pcs';
+        // Set ulang input kalender ke hari ini setelah data tersimpan
+        $this->tanggal_pembelian = now()->timezone('Asia/Makassar')->format('Y-m-d');
     }
 
     public function getStokDetailBySupplier($barang_id)

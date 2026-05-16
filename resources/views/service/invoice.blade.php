@@ -2,37 +2,47 @@
     <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 mt-16">
         <div class="max-w-4xl mx-auto">
             <!-- Header with Actions -->
-            <div class="bg-white bg-opacity-90 backdrop-blur-xl rounded-3xl shadow-xl border border-white border-opacity-30 p-6 mb-6">
-                <div class="flex items-center justify-between flex-wrap gap-4">
-                    <div class="flex items-center space-x-4">
-                        <div class="w-16 h-16 bg-gradient-to-br from-green-500 via-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg">
-                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                            </svg>
+                            <div class="bg-white bg-opacity-90 backdrop-blur-xl rounded-3xl shadow-xl border border-white border-opacity-30 p-6 mb-6">
+                    <div class="flex items-center justify-between flex-wrap gap-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-16 h-16 bg-gradient-to-br from-green-500 via-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg">
+                                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 class="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-gray-900 via-green-800 to-emerald-800 bg-clip-text text-transparent">
+                                    Invoice Service
+                                </h1>
+                                <p class="text-gray-500 font-medium text-base sm:text-lg">{{ $transaksi->invoice }}</p>
+                            </div>
                         </div>
-                        <div>
-                            <h1 class="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-gray-900 via-green-800 to-emerald-800 bg-clip-text text-transparent">
-                                Invoice Service
-                            </h1>
-                            <p class="text-gray-500 font-medium text-base sm:text-lg">{{ $transaksi->invoice }}</p>
+                        
+                        <div class="flex items-center space-x-3 flex-wrap">
+                            <a href="{{ url()->previous() ?? route('transaksi.services') }}"
+                            class="px-4 sm:px-6 py-2 sm:py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-semibold transition-all duration-300 flex items-center space-x-2 no-print">
+                                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                                </svg>
+                                <span class="text-sm sm:text-base">Kembali</span>
+                            </a>
+
+                            <a href="{{ route('service.invoice.print', $transaksi->id) }}" target="_blank"
+                            class="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 font-semibold transition-all duration-300 flex items-center space-x-2 no-print">
+                                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                                </svg>
+                                <span class="text-sm sm:text-base">Cetak</span>
+                            </a>
+
+                            <a href="{{ route('transaksi.services') }}"
+                            class="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl hover:from-blue-600 hover:to-indigo-600 font-semibold transition-all duration-300 flex items-center space-x-2 no-print shadow-sm shadow-blue-200">
+                                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                <span class="text-sm sm:text-base">Transaksi Baru</span>
+                            </a>
                         </div>
-                    </div>
-                    <!-- Action Buttons -->
-                    <div class="flex items-center space-x-3 flex-wrap">
-                        <a href="{{ url()->previous() ?? route('transaksi.services') }}"
-                           class="px-4 sm:px-6 py-2 sm:py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-semibold transition-all duration-300 flex items-center space-x-2 no-print">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                            </svg>
-                            <span class="text-sm sm:text-base">Kembali</span>
-                        </a>
-                        <a href="{{ route('service.invoice.print', $transaksi->id) }}" target="_blank"
-                           class="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 font-semibold transition-all duration-300 flex items-center space-x-2 no-print">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
-                            </svg>
-                            <span class="text-sm sm:text-base">Cetak</span>
-                        </a>
                     </div>
                 </div>
             </div>
@@ -50,7 +60,9 @@
                         <div class="text-left sm:text-right">
                             <div class="text-2xl sm:text-4xl font-bold">INVOICE</div>
                             <div class="text-lg sm:text-xl mt-2">{{ $transaksi->invoice }}</div>
-                            <div class="text-blue-100 mt-1 text-sm sm:text-base">{{ \Carbon\Carbon::parse($transaksi->tanggal_service)->format('d F Y') }}</div>
+                            <div class="text-blue-100 mt-1 text-sm sm:text-base">
+                                {{ \Carbon\Carbon::parse($transaksi->tanggal_service)->translatedFormat('d F Y') }}
+                            </div>
                         </div>
                     </div>
                 </div>

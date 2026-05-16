@@ -408,7 +408,7 @@
                 <div class="invoice-info">
                     <div class="invoice-title">INVOICE</div>
                     <div class="invoice-number">{{ $transaksi->invoice }}</div>
-                    <div class="invoice-date">{{ \Carbon\Carbon::parse($transaksi->tanggal_service)->format('d F Y') }}</div>
+                    <div class="invoice-date">{{ \Carbon\Carbon::parse($transaksi->tanggal_service)->translatedFormat('d F Y') }}</div>
                 </div>
             </div>
         </div>
@@ -490,7 +490,7 @@
                                         @endif
                                     @endif
                                 </td>
-                                <td class="text-center">{{ $item->jumlah }}</td>
+                                <td class="text-center">{{ $item->jumlah }} {{ Str::upper($item->satuan) }}</td>
                                 <td class="text-right">Rp{{ number_format($item->harga_jual, 0, ',', '.') }}</td>
                                 <td class="text-right"><strong>Rp{{ number_format($item->subtotal, 0, ',', '.') }}</strong></td>
                             </tr>

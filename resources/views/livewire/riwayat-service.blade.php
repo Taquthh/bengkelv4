@@ -157,7 +157,7 @@
                             <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900">Status Pembayaran</th>
                             <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900 cursor-pointer" wire:click="sortBy('created_at')">
                                 Tanggal
-                                @if($sortBy === 'created_at')
+                                @if($sortBy === 'tanggal_service')
                                     <span class="ml-1">{{ $sortDirection === 'asc' ? '↑' : '↓' }}</span>
                                 @endif
                             </th>
@@ -209,7 +209,7 @@
                                     @endif
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="text-sm text-gray-900">{{ $transaction->created_at->format('d/m/Y') }}</div>
+                                    <div class="text-sm text-gray-900">{{ $transaction->tanggal_service->format('d/m/Y') }}</div>
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center justify-center space-x-2 flex-wrap gap-1">
